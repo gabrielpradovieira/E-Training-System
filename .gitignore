@@ -1,0 +1,23 @@
+# SQLite database data file (schema.sql is kept in the repo)
+database/dashboard.sqlite3
+database/*.sqlite3-journal
+database/*.sqlite3-wal
+database/*.sqlite3-shm
+
+# Old duplicate backup of the app
+BACKUP_COPY/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+.vscode/
+.idea/
