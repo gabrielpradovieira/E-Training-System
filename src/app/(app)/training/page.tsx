@@ -19,15 +19,6 @@ const TASK_ORIENTED_DOC_URL =
 
 const CERTIFICATE_PERCENT = 15;
 
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="m9 18 6-6-6-6v12Z"></path>
-      <rect x="3" y="5" width="18" height="14" rx="3"></rect>
-    </svg>
-  );
-}
-
 /** Order value for a new video inserted after `afterIndex` (-1 = before first). */
 function insertOrder(videos: VideoDoc[], afterIndex: number): number {
   if (videos.length === 0) return 0;
@@ -311,59 +302,63 @@ export default function TrainingPage() {
                           <span className="accordion-arrow">&rsaquo;</span>
                         </button>
                         <div className={`accordion-content${isOpen ? " active" : ""}`} id={unit.topicId}>
-                          {isAdmin && (
-                            <p className="vid-admin-hint">Right-click a video to edit. Use + to add, trash to delete.</p>
-                          )}
-
-                          {isAdmin && (
-                            <button
-                              className="vid-insert"
-                              type="button"
-                              onClick={() =>
-                                setModal({ open: true, mode: "create", topicId: unit.topicId, order: insertOrder(videos, -1) })
-                              }
-                            >
-                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                              Add video
-                            </button>
-                          )}
-
                           {videos.length === 0 && !isAdmin && <p className="vid-empty">No videos yet.</p>}
 
                           {videos.map((video, index) => {
                             const isWatched = watched.has(video.id);
                             const isCurrent = currentVideoId === video.id;
+                            const number = String(index + 1).padStart(2, "0");
                             return (
-                              <div key={video.id}>
-                                <div className="vid-row">
-                                  <div
-                                    className={`detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-pressed={isWatched}
-                                    onClick={() => selectVideo(video)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        selectVideo(video);
-                                      }
-                                    }}
-                                    onContextMenu={(e) => {
-                                      if (isAdmin) {
-                                        e.preventDefault();
-                                        setModal({ open: true, mode: "edit", video });
-                                      }
-                                    }}
+                              <div className="vid-row" key={video.id}>
+                                {isAdmin && (
+                                  <button
+                                    className="vid-add-left"
+                                    type="button"
+                                    aria-label="Add a video here"
+                                    onClick={() =>
+                                      setModal({
+                                        open: true,
+                                        mode: "create",
+                                        topicId: unit.topicId,
+                                        order: insertOrder(videos, index - 1),
+                                      })
+                                    }
                                   >
-                                    <span className="curriculum-item-kind video">
-                                      <PlayIcon />
-                                    </span>
-                                    <span className="lesson-label">{video.title}</span>
-                                    {video.materials.length > 0 && (
-                                      <span className="lesson-duration">{video.materials.length} file(s)</span>
-                                    )}
-                                  </div>
-                                  {isAdmin && (
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                                  </button>
+                                )}
+                                <div
+                                  className={`detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-pressed={isWatched}
+                                  onClick={() => selectVideo(video)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      selectVideo(video);
+                                    }
+                                  }}
+                                >
+                                  <span className="vid-number">{number}</span>
+                                  <span className="lesson-label">{video.title}</span>
+                                  {video.materials.length > 0 && (
+                                    <span className="lesson-duration">{video.materials.length} file(s)</span>
+                                  )}
+                                </div>
+                                {isAdmin && (
+                                  <div className="vid-actions">
+                                    <button
+                                      className="vid-edit-btn"
+                                      type="button"
+                                      aria-label={`Edit ${video.title}`}
+                                      onClick={() => setModal({ open: true, mode: "edit", video })}
+                                    >
+                                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 20h9" />
+                                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                      </svg>
+                                    </button>
                                     <button
                                       className="vid-delete-btn"
                                       type="button"
@@ -377,28 +372,28 @@ export default function TrainingPage() {
                                         <path d="M10 11v6M14 11v6" />
                                       </svg>
                                     </button>
-                                  )}
-                                </div>
-                                {isAdmin && (
-                                  <button
-                                    className="vid-insert"
-                                    type="button"
-                                    aria-label="Add video here"
-                                    onClick={() =>
-                                      setModal({
-                                        open: true,
-                                        mode: "create",
-                                        topicId: unit.topicId,
-                                        order: insertOrder(videos, index),
-                                      })
-                                    }
-                                  >
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                                  </button>
+                                  </div>
                                 )}
                               </div>
                             );
                           })}
+
+                          {isAdmin && (
+                            <button
+                              className="vid-add-trailing"
+                              type="button"
+                              onClick={() =>
+                                setModal({
+                                  open: true,
+                                  mode: "create",
+                                  topicId: unit.topicId,
+                                  order: insertOrder(videos, videos.length - 1),
+                                })
+                              }
+                            >
+                              + Add video
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

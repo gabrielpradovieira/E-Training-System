@@ -45,7 +45,7 @@
 .vid-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .vid-row .detail-item {
@@ -53,24 +53,77 @@
   min-width: 0;
 }
 
-.vid-admin-hint {
-  font-size: 0.68rem;
+/* Auto number (01 / 02 / 03) to the left of each video title. */
+.vid-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.78rem;
   color: var(--muted);
-  padding: 2px 6px 6px;
+  min-width: 20px;
+  text-align: right;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
+.curriculum-video-item.current .vid-number,
+.curriculum-video-item.watched .vid-number {
+  color: var(--blue);
+}
+
+/* Add (+) on the left and edit/delete on the right — hidden until the row
+   is hovered (or a control is focused for keyboard users). */
+.vid-add-left,
+.vid-edit-btn,
 .vid-delete-btn {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--line);
   background: var(--card-inner);
   border-radius: 8px;
-  color: #dc2626;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.vid-row:hover .vid-add-left,
+.vid-row:hover .vid-edit-btn,
+.vid-row:hover .vid-delete-btn,
+.vid-add-left:focus-visible,
+.vid-edit-btn:focus-visible,
+.vid-delete-btn:focus-visible {
+  opacity: 1;
+}
+
+.vid-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.vid-add-left {
+  color: var(--blue);
+}
+
+.vid-add-left:hover {
+  background: rgba(38, 128, 194, 0.12);
+  border-color: var(--blue);
+}
+
+.vid-edit-btn {
+  color: var(--blue);
+}
+
+.vid-edit-btn:hover {
+  background: rgba(38, 128, 194, 0.12);
+  border-color: var(--blue);
+}
+
+.vid-delete-btn {
+  color: #dc2626;
 }
 
 .vid-delete-btn:hover {
@@ -78,6 +131,8 @@
   border-color: rgba(220, 38, 38, 0.4);
 }
 
+.vid-add-left svg,
+.vid-edit-btn svg,
 .vid-delete-btn svg {
   width: 15px;
   height: 15px;
@@ -88,37 +143,22 @@
   stroke-linejoin: round;
 }
 
-.vid-insert {
+.vid-add-trailing {
   width: 100%;
   border: 1px dashed var(--line);
   background: transparent;
   color: var(--muted);
   border-radius: 8px;
-  padding: 4px;
-  margin: 3px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 0.78rem;
+  padding: 6px;
+  margin-top: 4px;
+  font-size: 0.8rem;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: color 0.12s ease, border-color 0.12s ease;
 }
 
-.vid-insert:hover {
-  opacity: 1;
-  border-color: var(--blue);
+.vid-add-trailing:hover {
   color: var(--blue);
-}
-
-.vid-insert svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
+  border-color: var(--blue);
 }
 
 .vid-empty {
