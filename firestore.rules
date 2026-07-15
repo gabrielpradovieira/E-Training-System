@@ -31,7 +31,7 @@ service cloud.firestore {
 
     // The one admin account.
     function adminEmail() {
-      return "admin@example.com"; // <-- CHANGE THIS
+      return "oartevista@gmail.com";
     }
 
     function isAdmin() {
