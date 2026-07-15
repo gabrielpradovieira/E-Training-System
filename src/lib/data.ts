@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   setDoc,
@@ -15,18 +16,27 @@ import { db } from "@/lib/firebase/client";
 import { emailDocId, normalizeEmail } from "@/lib/email";
 import type { AllowlistEntry, UserProfile } from "@/lib/types";
 
-export const ADMIN_EMAIL = normalizeEmail(process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "");
-
-export function isAdminEmail(email?: string | null): boolean {
-  return !!email && ADMIN_EMAIL !== "" && normalizeEmail(email) === ADMIN_EMAIL;
+/**
+ * Determines admin status by CAPABILITY, not by a client-side email compare —
+ * so the admin's email never has to ship in the browser bundle. The allowlist
+ * is admin-only per the security rules, so a successful read == admin.
+ * Fails closed (returns false) on any error.
+ */
+export async function checkIsAdmin(): Promise<boolean> {
+  try {
+    await getDocs(query(collection(db, "allowlist"), limit(1)));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-function newProfile(user: User): UserProfile {
+function newProfile(user: User, admin: boolean): UserProfile {
   return {
     uid: user.uid,
     email: normalizeEmail(user.email ?? ""),
     displayName: user.displayName || (user.email ?? "").split("@")[0],
-    role: isAdminEmail(user.email) ? "admin" : "student",
+    role: admin ? "admin" : "student",
     approved: true,
     totalHours: 0,
     createdAt: Date.now(),
@@ -48,28 +58,38 @@ function notApproved(): Error {
  * @throws Error with code "not-approved"
  */
 export async function createOwnProfile(user: User): Promise<void> {
+  const admin = await checkIsAdmin();
   try {
-    await setDoc(doc(db, "users", user.uid), newProfile(user));
+    await setDoc(doc(db, "users", user.uid), newProfile(user, admin));
   } catch {
     throw notApproved();
   }
 }
 
 /**
- * Ensures a signed-in user has a profile (creating one on first sign-in).
+ * Ensures a signed-in user has a profile (creating one on first sign-in) and
+ * reports whether they are the admin. Both are decided by the security rules.
  * @throws Error with code "not-approved" when Firestore denies access.
  */
-export async function ensureProfile(user: User): Promise<UserProfile> {
+export async function ensureProfile(user: User): Promise<{ profile: UserProfile; isAdmin: boolean }> {
+  const admin = await checkIsAdmin();
   const ref = doc(db, "users", user.uid);
   try {
     const snap = await getDoc(ref);
     if (!snap.exists()) {
-      const profile = newProfile(user);
+      const profile = newProfile(user, admin);
       await setDoc(ref, profile);
-      return profile;
+      return { profile, isAdmin: admin };
     }
-    await setDoc(ref, { lastLoginAt: Date.now() }, { merge: true });
-    return { uid: user.uid, ...(snap.data() as Omit<UserProfile, "uid">) };
+    // Keep the stored role in sync with actual admin capability.
+    const patch: Record<string, unknown> = { lastLoginAt: Date.now() };
+    const storedRole = snap.get("role");
+    if (admin && storedRole !== "admin") patch.role = "admin";
+    await setDoc(ref, patch, { merge: true });
+    return {
+      profile: { uid: user.uid, ...(snap.data() as Omit<UserProfile, "uid">) },
+      isAdmin: admin,
+    };
   } catch {
     throw notApproved();
   }

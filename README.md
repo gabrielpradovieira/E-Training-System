@@ -14,9 +14,10 @@ Tailwind v4) and **Firebase** (Auth + Firestore), deployed on **Vercel**.
   usable account. Enforced by Firestore security rules (client-only, no server
   secrets); unapproved accounts are removed at registration and can access
   nothing.
-- **Admin panel** — gated by the admin email (in `firestore.rules` +
-  `NEXT_PUBLIC_ADMIN_EMAIL`): manage the approved-email allowlist, view all
-  users and their progress, and a summary overview.
+- **Admin panel** — gated by the admin email defined only in `firestore.rules`
+  (the client detects admin by capability, so the email never ships to the
+  browser): manage the approved-email allowlist, view all users and their
+  progress, and a summary overview.
 - **SharePoint media** — paste share links; they're converted to direct,
   embeddable URLs.
 

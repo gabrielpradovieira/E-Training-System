@@ -20,7 +20,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/client";
-import { createOwnProfile, ensureProfile, isAdminEmail } from "@/lib/data";
+import { checkIsAdmin, createOwnProfile, ensureProfile } from "@/lib/data";
 
 type AuthContextValue = {
   user: User | null;
@@ -40,9 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (nextUser) => {
+    const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
-      setIsAdmin(isAdminEmail(nextUser?.email));
+      setIsAdmin(nextUser ? await checkIsAdmin() : false);
       setLoading(false);
     });
     return () => unsub();
@@ -51,12 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInEmail = useCallback(async (email: string, password: string) => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     try {
-      await ensureProfile(cred.user);
+      const { isAdmin: admin } = await ensureProfile(cred.user);
+      setIsAdmin(admin);
     } catch (err) {
       await fbSignOut(auth).catch(() => {});
       throw err;
     }
-    setIsAdmin(isAdminEmail(cred.user.email));
   }, []);
 
   const signInGoogle = useCallback(async () => {
@@ -64,12 +64,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const cred = await signInWithPopup(auth, provider);
     try {
       // First-time Google users are provisioned here; unapproved ones are rejected.
-      await ensureProfile(cred.user);
+      const { isAdmin: admin } = await ensureProfile(cred.user);
+      setIsAdmin(admin);
     } catch (err) {
       await fbSignOut(auth).catch(() => {});
       throw err;
     }
-    setIsAdmin(isAdminEmail(cred.user.email));
   }, []);
 
   const register = useCallback(async (email: string, password: string, displayName: string) => {
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fbSignOut(auth).catch(() => {});
       throw err;
     }
-    setIsAdmin(isAdminEmail(cred.user.email));
+    setIsAdmin(await checkIsAdmin());
   }, []);
 
   const signOut = useCallback(async () => {

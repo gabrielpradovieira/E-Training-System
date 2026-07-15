@@ -57,7 +57,10 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read:   if isAdmin() || (request.auth.uid == uid && canUse());
-      allow create: if isAdmin() || (request.auth.uid == uid && canUse());
+      // Non-admins may only create their own profile as a "student" —
+      // the admin role can never be self-assigned.
+      allow create: if isAdmin()
+                    || (request.auth.uid == uid && canUse() && request.resource.data.role == 'student');
       allow update: if isAdmin()
                     || (request.auth.uid == uid && canUse() && protectedUnchanged());
       allow delete: if isAdmin();

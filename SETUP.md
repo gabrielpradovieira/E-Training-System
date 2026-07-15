@@ -8,8 +8,10 @@ Firestore security rules.
 - **Approved emails** (an admin-managed allowlist) can register/use the app.
   An unapproved person can create an auth account, but the rules let them read
   or write nothing, and the registration flow deletes the account immediately.
-- The **admin** is one email, set in `firestore.rules` (enforcement) and
-  `NEXT_PUBLIC_ADMIN_EMAIL` (UI). Keep the two in sync.
+- The **admin** is one email, set **only** in `firestore.rules`
+  (`adminEmail()`). The app never ships the admin email to the browser — it
+  detects admin status by capability (whether you can read the admin-only
+  allowlist).
 
 Package manager: **Bun**.
 
@@ -60,15 +62,17 @@ cp sample.env .env
 | Variable | Where it comes from |
 | --- | --- |
 | `NEXT_PUBLIC_FIREBASE_*` | Project settings → General → SDK setup |
-| `NEXT_PUBLIC_ADMIN_EMAIL` | Your admin's email (must match `firestore.rules`) |
 
-None of these are secrets — they're public identifiers. The admin gate and all
-data access are enforced by `firestore.rules`, not by these values.
+These are public identifiers, not secrets. The admin email is **not** here — it
+lives only in `firestore.rules`. Access control is enforced entirely by the
+rules.
 
 > **Security model:** access is enforced server-side by Firestore rules. A user
 > can read/write only their own profile, and only if their email is on the
-> allowlist (or is the admin). The admin email lives in `firestore.rules`;
-> `NEXT_PUBLIC_ADMIN_EMAIL` only controls whether the admin UI is shown.
+> allowlist (or is the admin). The admin email lives **only** in
+> `firestore.rules` (`adminEmail()`); the app detects admin status by capability
+> (whether the signed-in user can read the admin-only allowlist), so the email
+> never ships to the browser.
 
 ---
 
@@ -83,8 +87,8 @@ Open http://localhost:3000. You'll be redirected to `/login`.
 
 ### Bootstrap the admin
 
-1. Set `NEXT_PUBLIC_ADMIN_EMAIL` in `.env` to your email, and set the same email
-   in `firestore.rules` (`adminEmail()`), then deploy the rules (step 1).
+1. Set your email in `firestore.rules` (`adminEmail()`), then deploy the rules
+   (step 1).
 2. Go to `/register`, register with that same email, and set a password. (The
    admin is always allowed by the rules, even without being on the allowlist.)
 3. Sign in. The **Admin Panel** link appears in the sidebar.
