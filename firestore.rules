@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// =====================================================================
+// E-Training System — Firestore security rules
+//
+// Security model:
+//  - Admin is identified by a tamper-proof custom claim `admin: true`,
+//    set server-side (Firebase Admin SDK) only for the ADMIN_EMAIL user.
+//    The raw admin email is NEVER trusted from the client.
+//  - A signed-in user can read and update only their own profile, and
+//    cannot escalate their own role / approval / email.
+//  - Profiles are created server-side (Admin SDK bypasses these rules),
+//    so client-side create is closed.
+//  - The email allowlist and app config are admin-only.
+//  - Everything else is denied by default.
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Fields a normal user is NOT allowed to change on their own profile.
+    function protectedUnchanged() {
+      return request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.approved == resource.data.approved;
+    }
+
+    // User profiles + their progress.
+    match /users/{uid} {
+      allow read:   if isOwner(uid) || isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isOwner(uid) && protectedUnchanged());
+      allow delete: if isAdmin();
+
+      // Progress sub-documents owned by the same user.
+      match /{sub=**} {
+        allow read:  if isOwner(uid) || isAdmin();
+        allow write: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // Pre-approved email allowlist (admin-managed).
+    // The server registration route uses the Admin SDK, which bypasses
+    // these rules, so it can check the allowlist regardless.
+    match /allowlist/{emailId} {
+      allow read, write: if isAdmin();
+    }
+
+    // App-wide config: readable by any signed-in user, writable by admin.
+    match /config/{docId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Media references (SharePoint direct links), admin-managed,
+    // readable by signed-in users.
+    match /media/{mediaId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

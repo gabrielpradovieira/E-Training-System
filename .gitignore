@@ -1,23 +1,41 @@
-# SQLite database data file (schema.sql is kept in the repo)
-database/dashboard.sqlite3
-database/*.sqlite3-journal
-database/*.sqlite3-wal
-database/*.sqlite3-shm
+# ---- Next.js / Node ----
+/node_modules
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
 
-# Old duplicate backup of the app
-BACKUP_COPY/
+# ---- Environment / secrets ----
+.env
+.env*.local
+.env.local
+serviceAccountKey.json
+*-service-account*.json
 
-# Python
+# ---- Vercel ----
+.vercel
+
+# ---- Legacy static prototype ----
+legacy/database/dashboard.sqlite3
+legacy/database/*.sqlite3-journal
+legacy/database/*.sqlite3-wal
+legacy/database/*.sqlite3-shm
+legacy/BACKUP_COPY/
+
+# ---- Python (legacy) ----
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
 
-# OS / editor cruft
+# ---- OS / editor cruft ----
 Thumbs.db
 Desktop.ini
 .DS_Store
 *.swp
 .vscode/
 .idea/
+*.log
+npm-debug.log*
