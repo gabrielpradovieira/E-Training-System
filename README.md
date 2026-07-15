@@ -1,31 +1,42 @@
 # E-Training System
 
-A web-based training dashboard for tracking student competences, training hours, task banks, marking, and documentation — built for use with students.
+A web-based training platform for students (ACTVET EmiratesSkills, skill #50 —
+3D Digital Game Art). Built with **Next.js 16** (App Router, TypeScript,
+Tailwind v4) and **Firebase** (Auth + Firestore), deployed on **Vercel**.
 
-## Contents
+## Features
 
-- **`index.html`** — the main single-page application (dashboard UI).
-- **`assets/`** — logos, icons, and fonts used by the dashboard.
-- **`database/`** — SQLite persistence layer:
-  - `schema.sql` — initial table definitions.
-  - `database_manager.py` — small Python manager for initializing and summarizing the database.
+- **Dashboard, Training, Competences, Profile** — the full competitor dashboard
+  (roadmap, monthly-hours charts, weekly schedule, data-driven curriculum with
+  level tabs, accordions, lesson tracking, and the competence framework).
+- **Firebase auth** — email/password + Google sign-in.
+- **Pre-approved registration** — only emails an admin has approved can register
+  and set a password. Enforced server-side via the Firebase Admin SDK.
+- **Admin panel** — gated by `ADMIN_EMAIL` (via a tamper-proof custom claim):
+  manage the approved-email allowlist, view all users and their progress, and a
+  summary overview.
+- **SharePoint media** — paste share links; they're converted to direct,
+  embeddable URLs.
 
-## Getting started
-
-Open `index.html` in a browser. Keep the `assets/` folder beside it.
-
-### SQLite persistence
-
-The prototype includes a small SQLite manager in `database/database_manager.py`:
+## Quick start
 
 ```bash
-python database/database_manager.py init      # create the database and tables
-python database/database_manager.py summary   # print a summary
+bun install
+cp sample.env .env      # then fill in Firebase values (see SETUP.md)
+bun run dev             # http://localhost:3000
 ```
 
-The database file is created at `database/dashboard.sqlite3` from `database/schema.sql`.
-This data file is intentionally not committed (see `.gitignore`); run `init` to generate it locally.
+Full instructions — Firebase console, env vars, security rules, admin
+bootstrap, and Vercel deployment — are in **[SETUP.md](SETUP.md)**.
 
-## Notes
+## Security
 
-- Some assets reference external web resources that require internet access when used.
+Access control is enforced by [`firestore.rules`](firestore.rules) and
+server-side token verification, not by client-side checks. No secrets are stored
+in the source: all configuration comes from environment variables (`.env` is
+gitignored; `sample.env` is the committed template).
+
+## Legacy
+
+The original static-HTML prototype is archived under [`legacy/`](legacy/) and on
+the `legacy-static` branch.
