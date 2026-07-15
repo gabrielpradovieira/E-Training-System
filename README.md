@@ -10,11 +10,13 @@ Tailwind v4) and **Firebase** (Auth + Firestore), deployed on **Vercel**.
   (roadmap, monthly-hours charts, weekly schedule, data-driven curriculum with
   level tabs, accordions, lesson tracking, and the competence framework).
 - **Firebase auth** — email/password + Google sign-in.
-- **Pre-approved registration** — only emails an admin has approved can register
-  and set a password. Enforced server-side via the Firebase Admin SDK.
-- **Admin panel** — gated by `ADMIN_EMAIL` (via a tamper-proof custom claim):
-  manage the approved-email allowlist, view all users and their progress, and a
-  summary overview.
+- **Pre-approved registration** — only emails an admin has approved can create a
+  usable account. Enforced by Firestore security rules (client-only, no server
+  secrets); unapproved accounts are removed at registration and can access
+  nothing.
+- **Admin panel** — gated by the admin email (in `firestore.rules` +
+  `NEXT_PUBLIC_ADMIN_EMAIL`): manage the approved-email allowlist, view all
+  users and their progress, and a summary overview.
 - **SharePoint media** — paste share links; they're converted to direct,
   embeddable URLs.
 
@@ -31,10 +33,11 @@ bootstrap, and Vercel deployment — are in **[SETUP.md](SETUP.md)**.
 
 ## Security
 
-Access control is enforced by [`firestore.rules`](firestore.rules) and
-server-side token verification, not by client-side checks. No secrets are stored
-in the source: all configuration comes from environment variables (`.env` is
-gitignored; `sample.env` is the committed template).
+Access control is enforced by [`firestore.rules`](firestore.rules) — a user can
+read/write only their own profile, and only if their email is on the
+admin-managed allowlist (or is the admin). There are no server secrets: the app
+is client-only and all configuration comes from public `NEXT_PUBLIC_*` env vars
+(`.env` is gitignored; `sample.env` is the committed template).
 
 ## Legacy
 

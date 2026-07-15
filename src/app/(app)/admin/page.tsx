@@ -4,7 +4,12 @@ import "@/styles/admin.css";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { authedFetch } from "@/lib/api";
+import {
+  addAllowlistEmail,
+  fetchAllowlist,
+  fetchAllUsers,
+  removeAllowlistEmail,
+} from "@/lib/data";
 import type { AllowlistEntry, UserProfile } from "@/lib/types";
 
 type Summary = { total: number; admins: number; students: number; totalHours: number };
@@ -15,7 +20,7 @@ function formatDate(ms?: number): string {
 }
 
 export default function AdminPage() {
-  const { isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   const router = useRouter();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -35,16 +40,15 @@ export default function AdminPage() {
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const [usersRes, allowRes] = await Promise.all([
-        authedFetch("/api/admin/users"),
-        authedFetch("/api/admin/allowlist"),
-      ]);
-      if (!usersRes.ok || !allowRes.ok) throw new Error("Failed to load admin data.");
-      const usersData = (await usersRes.json()) as { users: UserProfile[]; summary: Summary };
-      const allowData = (await allowRes.json()) as { entries: AllowlistEntry[] };
-      setUsers(usersData.users);
-      setSummary(usersData.summary);
-      setAllowlist(allowData.entries);
+      const [allUsers, entries] = await Promise.all([fetchAllUsers(), fetchAllowlist()]);
+      setUsers(allUsers);
+      setSummary({
+        total: allUsers.length,
+        admins: allUsers.filter((u) => u.role === "admin").length,
+        students: allUsers.filter((u) => u.role === "student").length,
+        totalHours: allUsers.reduce((sum, u) => sum + (u.totalHours ?? 0), 0),
+      });
+      setAllowlist(entries);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin data.");
     } finally {
@@ -63,13 +67,7 @@ export default function AdminPage() {
     setError(null);
     setAdding(true);
     try {
-      const res = await authedFetch("/api/admin/allowlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: newEmail, displayName: newName }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Could not add email.");
+      await addAllowlistEmail(newEmail, newName, user?.email ?? user?.uid ?? "admin");
       setNewEmail("");
       setNewName("");
       await loadData();
@@ -83,10 +81,7 @@ export default function AdminPage() {
   async function removeEmail(email: string) {
     setError(null);
     try {
-      const res = await authedFetch(`/api/admin/allowlist?email=${encodeURIComponent(email)}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Could not remove email.");
+      await removeAllowlistEmail(email);
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not remove email.");

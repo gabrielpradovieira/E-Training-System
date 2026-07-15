@@ -1,8 +1,15 @@
 # E-Training System — Setup & Deployment
 
 A Next.js 16 (App Router, TypeScript, Tailwind v4) app with Firebase Auth +
-Firestore, deployed on Vercel. Registration is limited to **pre-approved
-emails**, and an **admin** (set by `ADMIN_EMAIL`) manages users and content.
+Firestore, deployed on Vercel. This is a **client-only** app — there is no
+server code or service-account key. Access control is enforced entirely by
+Firestore security rules.
+
+- **Approved emails** (an admin-managed allowlist) can register/use the app.
+  An unapproved person can create an auth account, but the rules let them read
+  or write nothing, and the registration flow deletes the account immediately.
+- The **admin** is one email, set in `firestore.rules` (enforcement) and
+  `NEXT_PUBLIC_ADMIN_EMAIL` (UI). Keep the two in sync.
 
 Package manager: **Bun**.
 
@@ -21,19 +28,22 @@ Project: **e-training-system** (already created).
    - (later) any custom domain
 3. **Firestore Database → Create database** — start in **production mode**,
    pick a region (e.g. `eur3` / `nam5`).
-4. **Project settings → Service accounts → Generate new private key** —
-   download the JSON. You'll paste three values from it into the env (below).
 
-### Deploy the security rules
+### Set the admin email + deploy the security rules
 
-The real access control lives in [`firestore.rules`](firestore.rules). Deploy it:
+The real access control lives in [`firestore.rules`](firestore.rules) — it is
+also where the admin email is enforced.
 
-```bash
-bunx firebase-tools login
-bunx firebase-tools deploy --only firestore:rules --project e-training-system
-```
+1. Open `firestore.rules` and change the `adminEmail()` line from
+   `admin@example.com` to your admin's email.
+2. Deploy the rules:
 
-(Or paste the contents of `firestore.rules` into **Firestore → Rules → Publish**.)
+   ```bash
+   bunx firebase-tools login
+   bunx firebase-tools deploy --only firestore:rules --project e-training-system
+   ```
+
+   (Or paste the contents of `firestore.rules` into **Firestore → Rules → Publish**.)
 
 ---
 
@@ -47,21 +57,18 @@ cp sample.env .env
 
 `.env` is gitignored — **never commit it**. Values:
 
-| Variable | Where it comes from | Secret? |
-| --- | --- | --- |
-| `NEXT_PUBLIC_FIREBASE_*` | Project settings → General → SDK setup | No (public by design) |
-| `ADMIN_EMAIL` | The email that should own the admin panel | No, but keep it right |
-| `FIREBASE_ADMIN_PROJECT_ID` | service-account JSON → `project_id` | — |
-| `FIREBASE_ADMIN_CLIENT_EMAIL` | service-account JSON → `client_email` | **Yes** |
-| `FIREBASE_ADMIN_PRIVATE_KEY` | service-account JSON → `private_key` | **Yes** |
+| Variable | Where it comes from |
+| --- | --- |
+| `NEXT_PUBLIC_FIREBASE_*` | Project settings → General → SDK setup |
+| `NEXT_PUBLIC_ADMIN_EMAIL` | Your admin's email (must match `firestore.rules`) |
 
-The private key must be one line with literal `\n` for newlines, wrapped in
-double quotes, e.g. `"-----BEGIN PRIVATE KEY-----\nMII…\n-----END PRIVATE KEY-----\n"`.
+None of these are secrets — they're public identifiers. The admin gate and all
+data access are enforced by `firestore.rules`, not by these values.
 
-> **Security model:** admin rights come from a tamper-proof Firebase *custom
-> claim* that the server sets only for `ADMIN_EMAIL`. The Firestore rules trust
-> that claim, not any value sent from the browser. No secrets live in the app
-> code — everything comes from env.
+> **Security model:** access is enforced server-side by Firestore rules. A user
+> can read/write only their own profile, and only if their email is on the
+> allowlist (or is the admin). The admin email lives in `firestore.rules`;
+> `NEXT_PUBLIC_ADMIN_EMAIL` only controls whether the admin UI is shown.
 
 ---
 
@@ -76,18 +83,18 @@ Open http://localhost:3000. You'll be redirected to `/login`.
 
 ### Bootstrap the admin
 
-1. Set `ADMIN_EMAIL` in `.env` to your email.
-2. Go to `/register`, register with that same email (the admin email is always
-   allowed to register), and set a password.
-3. Sign in. The server grants the admin claim on first sign-in, and the
-   **Admin Panel** link appears in the sidebar.
+1. Set `NEXT_PUBLIC_ADMIN_EMAIL` in `.env` to your email, and set the same email
+   in `firestore.rules` (`adminEmail()`), then deploy the rules (step 1).
+2. Go to `/register`, register with that same email, and set a password. (The
+   admin is always allowed by the rules, even without being on the allowlist.)
+3. Sign in. The **Admin Panel** link appears in the sidebar.
 
 ### Invite students
 
 In the Admin Panel → **Approved emails**, add each student's email. They can
 then `/register` with that email and set their own password. Emails not on the
-list are rejected at registration (and unapproved Google sign-ins are removed
-server-side).
+list can't create a usable account — registration deletes the account, and the
+rules block all data access for anyone not approved.
 
 ---
 
@@ -114,7 +121,7 @@ upgrade is Microsoft Graph with an Azure AD app registration.
    Framework preset **Next.js** is auto-detected. Build command `bun run build`,
    install command `bun install`.
 3. **Settings → Environment Variables** — add every variable from your `.env`
-   (all environments). Keep `FIREBASE_ADMIN_PRIVATE_KEY` exactly as in `.env`.
+   (all environments). They're all `NEXT_PUBLIC_*`, no secrets.
 4. Deploy. Then add the Vercel domain to Firebase **Authorized domains** (step 1.2).
 
 Every push to `main` redeploys automatically.
@@ -129,15 +136,12 @@ src/
     (app)/            authenticated app — dashboard, training, competences,
                       profile, admin, + coming-soon stubs (shared shell)
     (auth)/           login + register (public)
-    api/
-      register/       pre-approved registration (Admin SDK)
-      auth/sync/      post-login approval + admin-claim sync
-      admin/          users, allowlist, media (admin-only)
   components/         AppShell, AuthGuard, MediaEmbed, dashboard pieces
-  lib/                firebase (client/admin), auth-context, curriculum,
-                      sharepoint, types, helpers
+  lib/                firebase/client, auth-context, data (Firestore access),
+                      curriculum, sharepoint, types, helpers
   styles/             legacy-dashboard.css (ported verbatim), auth.css, admin.css
 legacy/               the original static prototype (archived)
-firestore.rules       Firestore security rules (the enforcement layer)
+firestore.rules       Firestore security rules (the enforcement layer +
+                      the admin email)
 sample.env            env template (committed); copy to .env (gitignored)
 ```
