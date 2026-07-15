@@ -41,8 +41,12 @@ function LoginInner() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace(nextPath);
-  }, [loading, user, router, nextPath]);
+    // Only auto-redirect visitors who are ALREADY signed in on arrival.
+    // During an active sign-in, handleEmailSubmit/handleGoogle navigate only
+    // after the approval check passes — otherwise the "not approved" error
+    // would be lost to a premature redirect.
+    if (!loading && user && !busy) router.replace(nextPath);
+  }, [loading, user, busy, router, nextPath]);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
