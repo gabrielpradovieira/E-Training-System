@@ -120,9 +120,13 @@ export default function TrainingPage() {
 
   async function handleDelete(video: VideoDoc) {
     if (!window.confirm(`Delete "${video.title}"?`)) return;
-    await deleteVideo(video.id);
-    if (currentVideoId === video.id) setCurrentVideoId(null);
-    await loadVideos();
+    try {
+      await deleteVideo(video.id);
+      if (currentVideoId === video.id) setCurrentVideoId(null);
+      await loadVideos();
+    } catch {
+      setLoadError("Couldn't delete the video. Make sure the videos rules are published.");
+    }
   }
 
   const videoTitle = currentVideo?.title ?? "Welcome to 3D Digital Game Art";

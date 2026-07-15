@@ -31,6 +31,18 @@ export function toDirectSharePointUrl(shareUrl: string): string {
   }
 }
 
+/**
+ * Accepts either a bare URL or a full `<iframe …>` embed snippet (what
+ * SharePoint/OneDrive "Copy embed code" produces) and returns just the URL to
+ * put in an iframe `src`.
+ */
+export function extractEmbedSrc(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+  const match = trimmed.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+  return match ? match[1] : trimmed;
+}
+
 export type MediaKind = "image" | "video" | "model" | "other";
 
 /** Best-effort guess of media kind from a URL's file extension. */

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { VideoDoc, VideoMaterial } from "@/lib/types";
+import { extractEmbedSrc } from "@/lib/sharepoint";
 
 export type VideoModalData = {
   title: string;
@@ -28,6 +29,7 @@ export default function VideoEditModal({
   const [embedUrl, setEmbedUrl] = useState(initial?.embedUrl ?? "");
   const [materials, setMaterials] = useState<VideoMaterial[]>(initial?.materials ?? []);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function updateMaterial(index: number, field: keyof VideoMaterial, value: string) {
     setMaterials((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
@@ -35,14 +37,19 @@ export default function VideoEditModal({
 
   async function handleSave() {
     setSaving(true);
+    setError(null);
     try {
       await onSave({
         title: title.trim() || "Untitled video",
-        embedUrl: embedUrl.trim(),
+        // Accept a full <iframe> embed snippet or a bare URL.
+        embedUrl: extractEmbedSrc(embedUrl),
         // Drop empty rows.
         materials: materials.filter((m) => m.label.trim() || m.url.trim()),
       });
-    } finally {
+    } catch {
+      setError(
+        "Couldn't save. Make sure the updated firestore.rules are published and you're signed in as admin.",
+      );
       setSaving(false);
     }
   }
@@ -51,7 +58,11 @@ export default function VideoEditModal({
     <div className="video-modal-overlay" onClick={onClose} role="presentation">
       <div className="video-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <h3>{mode === "create" ? "Add video" : "Edit video"}</h3>
-        <p className="video-modal-sub">Paste a OneDrive / SharePoint embed link and attach any learning materials.</p>
+        <p className="video-modal-sub">
+          Paste the OneDrive / SharePoint <strong>embed code</strong> (or just the link) and attach any learning materials.
+        </p>
+
+        {error && <div className="video-modal-error">{error}</div>}
 
         <label htmlFor="vm-title">Video title</label>
         <input
@@ -62,12 +73,12 @@ export default function VideoEditModal({
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        <label htmlFor="vm-embed">OneDrive embed link</label>
+        <label htmlFor="vm-embed">OneDrive embed code or link</label>
         <input
           id="vm-embed"
-          type="url"
+          type="text"
           value={embedUrl}
-          placeholder="https://onedrive.live.com/embed?..."
+          placeholder='<iframe src="…"> or https://…'
           onChange={(e) => setEmbedUrl(e.target.value)}
         />
 

@@ -163,6 +163,16 @@
   margin-bottom: 18px;
 }
 
+.video-modal-error {
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #b91c1c;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  margin-bottom: 12px;
+}
+
 .video-modal label {
   display: block;
   font-size: 0.8rem;
