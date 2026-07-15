@@ -30,11 +30,14 @@ function LoginInner() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
   const registered = searchParams.get("registered") === "1";
+  const notApproved = searchParams.get("error") === "not-approved";
   const { user, loading, signInEmail, signInGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    notApproved ? "Your email is not approved to use the system yet. Contact your administrator." : null,
+  );
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
