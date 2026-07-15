@@ -19,3 +19,30 @@ export type AllowlistEntry = {
   addedAt?: number;
   registered?: boolean;
 };
+
+export type VideoMaterial = {
+  label: string;
+  url: string;
+};
+
+export type VideoDoc = {
+  id: string;
+  /** The competence unit this video belongs to, e.g. "course-cu-1". */
+  topicId: string;
+  /** Sort position within the topic (fractional inserts are allowed). */
+  order: number;
+  title: string;
+  /** OneDrive / SharePoint embed URL rendered in an iframe. */
+  embedUrl: string;
+  materials: VideoMaterial[];
+  createdAt?: number;
+  updatedAt?: number;
+};
+
+export type VideoInput = {
+  topicId: string;
+  order: number;
+  title: string;
+  embedUrl: string;
+  materials: VideoMaterial[];
+};

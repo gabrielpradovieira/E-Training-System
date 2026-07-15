@@ -2,6 +2,7 @@
 
 import type { User } from "firebase/auth";
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -11,10 +12,11 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { emailDocId, normalizeEmail } from "@/lib/email";
-import type { AllowlistEntry, UserProfile } from "@/lib/types";
+import type { AllowlistEntry, UserProfile, VideoDoc, VideoInput } from "@/lib/types";
 
 /**
  * Determines admin status by CAPABILITY, not by a client-side email compare —
@@ -134,4 +136,48 @@ export async function addAllowlistEmail(email: string, displayName: string, adde
 
 export async function removeAllowlistEmail(email: string): Promise<void> {
   await deleteDoc(doc(db, "allowlist", emailDocId(normalizeEmail(email))));
+}
+
+/* ---------------- Training videos (read: approved; write: admin) --------------- */
+
+/** All videos, grouped by topicId and sorted by order within each topic. */
+export async function fetchVideosByTopic(): Promise<Record<string, VideoDoc[]>> {
+  const snap = await getDocs(collection(db, "videos"));
+  const byTopic: Record<string, VideoDoc[]> = {};
+  snap.docs.forEach((d) => {
+    const data = d.data();
+    const video: VideoDoc = {
+      id: d.id,
+      topicId: data.topicId ?? "",
+      order: data.order ?? 0,
+      title: data.title ?? "Untitled",
+      embedUrl: data.embedUrl ?? "",
+      materials: Array.isArray(data.materials) ? data.materials : [],
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
+    (byTopic[video.topicId] ??= []).push(video);
+  });
+  Object.values(byTopic).forEach((list) => list.sort((a, b) => a.order - b.order));
+  return byTopic;
+}
+
+export async function createVideo(input: VideoInput): Promise<string> {
+  const ref = await addDoc(collection(db, "videos"), {
+    ...input,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+  return ref.id;
+}
+
+export async function updateVideo(
+  id: string,
+  patch: Partial<Omit<VideoInput, "topicId">>,
+): Promise<void> {
+  await updateDoc(doc(db, "videos", id), { ...patch, updatedAt: Date.now() });
+}
+
+export async function deleteVideo(id: string): Promise<void> {
+  await deleteDoc(doc(db, "videos", id));
 }

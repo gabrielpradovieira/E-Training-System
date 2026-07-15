@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  buildCurriculumForLevel,
-  competenceUnits,
-  type CurriculumItemType,
-  type CurriculumLevel,
-} from "@/lib/curriculum";
+import "@/styles/training-admin.css";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { buildCurriculumForLevel, type CurriculumLevel } from "@/lib/curriculum";
+import { useAuth } from "@/lib/auth-context";
+import { createVideo, deleteVideo, fetchVideosByTopic, updateVideo } from "@/lib/data";
+import type { VideoDoc } from "@/lib/types";
+import VideoEditModal, { type VideoModalData } from "@/components/VideoEditModal";
 
 const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = [
   { level: "foundation", label: "Foundation" },
@@ -17,88 +17,74 @@ const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = [
 const TASK_ORIENTED_DOC_URL =
   "file:///C:/Users/LENOVO/Desktop/DOCUMENTS/Task%20Oriented%20Approach/Task%20Oriented%20Approach%20-%203D%20Digital%20Game%20Art.pdf";
 
-function ItemKindIcon({ type }: { type: CurriculumItemType }) {
-  if (type === "video") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="m9 18 6-6-6-6v12Z"></path>
-        <rect x="3" y="5" width="18" height="14" rx="3"></rect>
-      </svg>
-    );
-  }
-  if (type === "task") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4"></path>
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-      </svg>
-    );
-  }
+const CERTIFICATE_PERCENT = 15;
+
+function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <path d="M14 2v6h6"></path>
-      <path d="M8 13h8"></path>
-      <path d="M8 17h5"></path>
+      <path d="m9 18 6-6-6-6v12Z"></path>
+      <rect x="3" y="5" width="18" height="14" rx="3"></rect>
     </svg>
   );
 }
 
-// Foundation units (cu <= 5) start with their video lessons marked watched.
-const initialWatched = new Set<string>();
-competenceUnits.forEach((unit) => {
-  if (unit.cu <= 5) {
-    const topicId = `course-cu-${unit.cu}`;
-    // Overview / Tool workflow / Practice = 3 video items.
-    for (let i = 0; i < 3; i += 1) initialWatched.add(`${topicId}-${i}`);
-  }
-});
+/** Order value for a new video inserted after `afterIndex` (-1 = before first). */
+function insertOrder(videos: VideoDoc[], afterIndex: number): number {
+  if (videos.length === 0) return 0;
+  if (afterIndex < 0) return videos[0].order - 1;
+  if (afterIndex >= videos.length - 1) return videos[videos.length - 1].order + 1;
+  return (videos[afterIndex].order + videos[afterIndex + 1].order) / 2;
+}
 
-const CERTIFICATE_PERCENT = 15;
+type ModalState =
+  | { open: false }
+  | { open: true; mode: "create"; topicId: string; order: number }
+  | { open: true; mode: "edit"; video: VideoDoc };
 
 export default function TrainingPage() {
+  const { isAdmin } = useAuth();
+
   const [activeLevel, setActiveLevel] = useState<CurriculumLevel>("foundation");
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
-  const [watched, setWatched] = useState<Set<string>>(() => new Set(initialWatched));
-  const [currentLessonKey, setCurrentLessonKey] = useState<string | null>(null);
+  const [watched, setWatched] = useState<Set<string>>(new Set());
+  const [videosByTopic, setVideosByTopic] = useState<Record<string, VideoDoc[]>>({});
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalState>({ open: false });
 
   const groups = useMemo(() => buildCurriculumForLevel(activeLevel), [activeLevel]);
 
-  // Flat, ordered list of every lesson key in the active level (for prev/next).
-  const lessonKeys = useMemo(() => {
-    const keys: string[] = [];
-    groups.forEach((group) => {
-      group.units.forEach((unit) => {
-        unit.items.forEach((_, index) => keys.push(`${unit.topicId}-${index}`));
-      });
-    });
-    return keys;
-  }, [groups]);
+  const loadVideos = useCallback(async () => {
+    try {
+      setVideosByTopic(await fetchVideosByTopic());
+      setLoadError(null);
+    } catch {
+      setLoadError("Couldn't load videos.");
+    }
+  }, []);
 
-  const lessonLabels = useMemo(() => {
-    const map = new Map<string, string>();
-    groups.forEach((group) => {
-      group.units.forEach((unit) => {
-        unit.items.forEach((item, index) => map.set(`${unit.topicId}-${index}`, item.label));
-      });
-    });
-    return map;
-  }, [groups]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadVideos();
+  }, [loadVideos]);
 
-  const currentIndex = currentLessonKey ? lessonKeys.indexOf(currentLessonKey) : -1;
-  const totalLessons = lessonKeys.length;
+  // Flat, ordered list of videos across the active level (for prev/next lookups).
+  const flatVideos = useMemo(() => {
+    const list: VideoDoc[] = [];
+    groups.forEach((group) =>
+      group.units.forEach((unit) => (videosByTopic[unit.topicId] ?? []).forEach((v) => list.push(v))),
+    );
+    return list;
+  }, [groups, videosByTopic]);
 
-  const videoTitle = currentIndex >= 0 && currentLessonKey
-    ? lessonLabels.get(currentLessonKey) ?? "Welcome to 3D Digital Game Art"
-    : "Welcome to 3D Digital Game Art";
-  const videoDescription = currentIndex >= 0
-    ? `Lesson ${currentIndex + 1} of ${totalLessons} in the 3D Digital Game Art curriculum.`
-    : "Select any lesson from the curriculum on the right to begin watching the training videos.";
+  const currentIndex = currentVideoId ? flatVideos.findIndex((v) => v.id === currentVideoId) : -1;
+  const currentVideo = currentIndex >= 0 ? flatVideos[currentIndex] : null;
+  const totalVideos = flatVideos.length;
 
   function changeLevel(level: CurriculumLevel) {
     setActiveLevel(level);
     setOpenTopics(new Set());
-    setCurrentLessonKey(null);
+    setCurrentVideoId(null);
   }
 
   function toggleTopic(topicId: string) {
@@ -110,21 +96,40 @@ export default function TrainingPage() {
     });
   }
 
-  function selectLesson(key: string) {
-    setWatched((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-    setCurrentLessonKey(key);
+  function selectVideo(video: VideoDoc) {
+    setWatched((prev) => new Set(prev).add(video.id));
+    setCurrentVideoId(video.id);
   }
 
   function selectByOffset(offset: number) {
-    if (!lessonKeys.length) return;
-    const nextIndex = currentIndex < 0 ? 0 : Math.min(Math.max(currentIndex + offset, 0), lessonKeys.length - 1);
-    setCurrentLessonKey(lessonKeys[nextIndex]);
+    if (!flatVideos.length) return;
+    const nextIndex = currentIndex < 0 ? 0 : Math.min(Math.max(currentIndex + offset, 0), flatVideos.length - 1);
+    setCurrentVideoId(flatVideos[nextIndex].id);
   }
+
+  async function handleSave(data: VideoModalData) {
+    if (!modal.open) return;
+    if (modal.mode === "create") {
+      await createVideo({ topicId: modal.topicId, order: modal.order, ...data });
+    } else {
+      await updateVideo(modal.video.id, data);
+    }
+    await loadVideos();
+    setModal({ open: false });
+  }
+
+  async function handleDelete(video: VideoDoc) {
+    if (!window.confirm(`Delete "${video.title}"?`)) return;
+    await deleteVideo(video.id);
+    if (currentVideoId === video.id) setCurrentVideoId(null);
+    await loadVideos();
+  }
+
+  const videoTitle = currentVideo?.title ?? "Welcome to 3D Digital Game Art";
+  const videoDescription =
+    currentIndex >= 0
+      ? `Lesson ${currentIndex + 1} of ${totalVideos} in the 3D Digital Game Art curriculum.`
+      : "Select any lesson from the curriculum on the right to begin watching the training videos.";
 
   return (
     <main id="training" className="section active">
@@ -134,15 +139,39 @@ export default function TrainingPage() {
           <div className="video-section">
             <div className="video-player glass">
               <div className="video-container">
-                <div className="video-placeholder">
-                  <div className="play-icon">&#9658;</div>
-                  <p>Select a lesson to start learning</p>
-                </div>
+                {currentVideo?.embedUrl ? (
+                  <iframe
+                    className="video-embed-frame"
+                    src={currentVideo.embedUrl}
+                    title={currentVideo.title}
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="video-placeholder">
+                    <div className="play-icon">&#9658;</div>
+                    <p>{currentVideo ? "No video link set for this lesson yet." : "Select a lesson to start learning"}</p>
+                  </div>
+                )}
               </div>
               <div className="video-info">
                 <div className="video-copy">
                   <h3 className="video-title">{videoTitle}</h3>
                   <p className="video-description">{videoDescription}</p>
+                  {currentVideo && currentVideo.materials.length > 0 && (
+                    <div className="video-materials">
+                      <h4>Learning materials</h4>
+                      <ul>
+                        {currentVideo.materials.map((m, i) => (
+                          <li key={i}>
+                            <a href={m.url} target="_blank" rel="noopener noreferrer">
+                              {m.label || m.url}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div className="video-controls" aria-label="Lesson navigation">
                   <button
@@ -156,7 +185,7 @@ export default function TrainingPage() {
                   <button
                     className="lesson-nav-btn next-lesson"
                     type="button"
-                    disabled={totalLessons === 0 || currentIndex >= totalLessons - 1}
+                    disabled={totalVideos === 0 || currentIndex >= totalVideos - 1}
                     onClick={() => selectByOffset(1)}
                   >
                     Next
@@ -179,7 +208,7 @@ export default function TrainingPage() {
                     </svg>
                     <span>Completion Certificate</span>
                   </div>
-                  <p className="certificate-note">Certificate will be available for download only after full completion of the course.</p>
+                  <p className="certificate-note">Certificate will be available after full completion of the course.</p>
                 </div>
                 <div className="certificate-actions">
                   <div className="certificate-progress" aria-label="Course completion progress">
@@ -191,14 +220,6 @@ export default function TrainingPage() {
                     </div>
                     <span className="progress-text certificate-progress-text">{CERTIFICATE_PERCENT}%</span>
                   </div>
-                  <button className="certificate-button" type="button" disabled aria-disabled="true">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 3v12"></path>
-                      <path d="m7 10 5 5 5-5"></path>
-                      <path d="M5 21h14"></path>
-                    </svg>
-                    <span>Download Certificate</span>
-                  </button>
                 </div>
               </div>
               <div className="certificate-section">
@@ -224,50 +245,6 @@ export default function TrainingPage() {
                   </p>
                 </div>
               </div>
-              <div className="certificate-section">
-                <div className="certificate-main">
-                  <div className="certificate-title">
-                    <svg className="certificate-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
-                      <path d="M14 2v6h6"></path>
-                      <path d="M12 18v-6"></path>
-                      <path d="m9 15 3 3 3-3"></path>
-                    </svg>
-                    <span>Learning Material</span>
-                  </div>
-                  <p className="certificate-note">Reference document available for download.</p>
-                  <ul className="resource-file-list">
-                    <li>
-                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
-                        <path d="M14 2v6h6"></path>
-                      </svg>
-                      <span>Modeling_TASK.ma</span>
-                      <a className="resource-file-download" href="#" aria-label="Download Modeling_TASK.ma">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 3v12"></path>
-                          <path d="m7 10 5 5 5-5"></path>
-                          <path d="M5 21h14"></path>
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
-                        <path d="M14 2v6h6"></path>
-                      </svg>
-                      <span>Maya_Shortcut_Guide.pdf</span>
-                      <a className="resource-file-download" href="#" aria-label="Download Maya_Shortcut_Guide.pdf">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 3v12"></path>
-                          <path d="m7 10 5 5 5-5"></path>
-                          <path d="M5 21h14"></path>
-                        </svg>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -290,6 +267,7 @@ export default function TrainingPage() {
                   </svg>
                 </a>
               </div>
+              {loadError && <p className="vid-empty">{loadError}</p>}
               <div className="curriculum-level-tabs" role="tablist" aria-label="Curriculum level filter">
                 {LEVEL_TABS.map((tab) => (
                   <button
@@ -314,6 +292,7 @@ export default function TrainingPage() {
                   </div>
                   {group.units.map((unit) => {
                     const isOpen = openTopics.has(unit.topicId);
+                    const videos = videosByTopic[unit.topicId] ?? [];
                     return (
                       <div className="accordion-topic curriculum-cu-topic" key={unit.topicId}>
                         <button
@@ -328,34 +307,91 @@ export default function TrainingPage() {
                           <span className="accordion-arrow">&rsaquo;</span>
                         </button>
                         <div className={`accordion-content${isOpen ? " active" : ""}`} id={unit.topicId}>
-                          {unit.items.map((item, index) => {
-                            const key = `${unit.topicId}-${index}`;
-                            const isWatched = watched.has(key);
-                            const isCurrent = currentLessonKey === key;
-                            const className =
-                              item.itemType === "video"
-                                ? `detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`
-                                : `detail-item curriculum-resource-item resource-${item.itemType}${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`;
+                          {isAdmin && (
+                            <p className="vid-admin-hint">Right-click a video to edit. Use + to add, trash to delete.</p>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              className="vid-insert"
+                              type="button"
+                              onClick={() =>
+                                setModal({ open: true, mode: "create", topicId: unit.topicId, order: insertOrder(videos, -1) })
+                              }
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                              Add video
+                            </button>
+                          )}
+
+                          {videos.length === 0 && !isAdmin && <p className="vid-empty">No videos yet.</p>}
+
+                          {videos.map((video, index) => {
+                            const isWatched = watched.has(video.id);
+                            const isCurrent = currentVideoId === video.id;
                             return (
-                              <div
-                                key={key}
-                                className={className}
-                                role="button"
-                                tabIndex={0}
-                                aria-pressed={isWatched}
-                                onClick={() => selectLesson(key)}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter" || event.key === " ") {
-                                    event.preventDefault();
-                                    selectLesson(key);
-                                  }
-                                }}
-                              >
-                                <span className={`curriculum-item-kind ${item.itemType}`}>
-                                  <ItemKindIcon type={item.itemType} />
-                                </span>
-                                <span className="lesson-label">{item.label}</span>
-                                <span className="lesson-duration">{item.meta}</span>
+                              <div key={video.id}>
+                                <div className="vid-row">
+                                  <div
+                                    className={`detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-pressed={isWatched}
+                                    onClick={() => selectVideo(video)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        selectVideo(video);
+                                      }
+                                    }}
+                                    onContextMenu={(e) => {
+                                      if (isAdmin) {
+                                        e.preventDefault();
+                                        setModal({ open: true, mode: "edit", video });
+                                      }
+                                    }}
+                                  >
+                                    <span className="curriculum-item-kind video">
+                                      <PlayIcon />
+                                    </span>
+                                    <span className="lesson-label">{video.title}</span>
+                                    {video.materials.length > 0 && (
+                                      <span className="lesson-duration">{video.materials.length} file(s)</span>
+                                    )}
+                                  </div>
+                                  {isAdmin && (
+                                    <button
+                                      className="vid-delete-btn"
+                                      type="button"
+                                      aria-label={`Delete ${video.title}`}
+                                      onClick={() => handleDelete(video)}
+                                    >
+                                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M3 6h18" />
+                                        <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                        <path d="M10 11v6M14 11v6" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                                {isAdmin && (
+                                  <button
+                                    className="vid-insert"
+                                    type="button"
+                                    aria-label="Add video here"
+                                    onClick={() =>
+                                      setModal({
+                                        open: true,
+                                        mode: "create",
+                                        topicId: unit.topicId,
+                                        order: insertOrder(videos, index),
+                                      })
+                                    }
+                                  >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                                  </button>
+                                )}
                               </div>
                             );
                           })}
@@ -369,6 +405,16 @@ export default function TrainingPage() {
           </div>
         </div>
       </div>
+
+      {modal.open && (
+        <VideoEditModal
+          key={modal.mode === "edit" ? `edit-${modal.video.id}` : `create-${modal.topicId}-${modal.order}`}
+          mode={modal.mode}
+          initial={modal.mode === "edit" ? modal.video : null}
+          onClose={() => setModal({ open: false })}
+          onSave={handleSave}
+        />
+      )}
     </main>
   );
 }
