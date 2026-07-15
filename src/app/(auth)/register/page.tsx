@@ -4,9 +4,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,19 +32,11 @@ export default function RegisterPage() {
 
     setBusy(true);
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, displayName }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Registration failed. Please try again.");
-        return;
-      }
-      router.replace("/login?registered=1");
-    } catch {
-      setError("Network error. Please try again.");
+      await register(email, password, displayName);
+      // Approved users are signed in and provisioned — go straight to the app.
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(friendlyRegisterError(err));
     } finally {
       setBusy(false);
     }
@@ -110,4 +104,20 @@ export default function RegisterPage() {
       </p>
     </div>
   );
+}
+
+function friendlyRegisterError(err: unknown): string {
+  const code = (err as { code?: string })?.code;
+  switch (code) {
+    case "not-approved":
+      return "This email is not approved for registration. Please contact your administrator.";
+    case "auth/email-already-in-use":
+      return "An account with this email already exists. Please sign in instead.";
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/weak-password":
+      return "Password is too weak. Use at least 8 characters.";
+    default:
+      return err instanceof Error ? err.message : "Registration failed. Please try again.";
+  }
 }

@@ -30,16 +30,23 @@ function LoginInner() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
   const registered = searchParams.get("registered") === "1";
+  const notApproved = searchParams.get("error") === "not-approved";
   const { user, loading, signInEmail, signInGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    notApproved ? "Your email is not approved to use the system yet. Contact your administrator." : null,
+  );
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace(nextPath);
-  }, [loading, user, router, nextPath]);
+    // Only auto-redirect visitors who are ALREADY signed in on arrival.
+    // During an active sign-in, handleEmailSubmit/handleGoogle navigate only
+    // after the approval check passes — otherwise the "not approved" error
+    // would be lost to a premature redirect.
+    if (!loading && user && !busy) router.replace(nextPath);
+  }, [loading, user, busy, router, nextPath]);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();

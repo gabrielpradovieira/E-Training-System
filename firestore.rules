@@ -1,18 +1,21 @@
 rules_version = '2';
 
 // =====================================================================
-// E-Training System — Firestore security rules
+// E-Training System — Firestore security rules (client-only model)
 //
 // Security model:
-//  - Admin is identified by a tamper-proof custom claim `admin: true`,
-//    set server-side (Firebase Admin SDK) only for the ADMIN_EMAIL user.
-//    The raw admin email is NEVER trusted from the client.
-//  - A signed-in user can read and update only their own profile, and
-//    cannot escalate their own role / approval / email.
-//  - Profiles are created server-side (Admin SDK bypasses these rules),
-//    so client-side create is closed.
-//  - The email allowlist and app config are admin-only.
+//  - Admin is the single ADMIN_EMAIL below. Set it to your admin's email.
+//    (There is no server/Admin SDK in this model, so the admin email is
+//    enforced here in the rules — this file IS the source of truth for it.)
+//  - A user may read/write ONLY their own profile, and only if their email
+//    is on the admin-managed `allowlist` (i.e. pre-approved) — or they are
+//    the admin. Unapproved accounts can exist but can touch no data.
+//  - Users cannot change their own role / approval / email.
+//  - The allowlist and app config/media are admin-only for writes.
 //  - Everything else is denied by default.
+//
+// >>> IMPORTANT: replace the email on the ADMIN_EMAIL line below, and keep
+//     it in sync with NEXT_PUBLIC_ADMIN_EMAIL in your environment. <<<
 // =====================================================================
 
 service cloud.firestore {
@@ -22,52 +25,65 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function userEmail() {
+      return isSignedIn() ? request.auth.token.email : "";
+    }
+
+    // The one admin account.
+    function adminEmail() {
+      return "oartevista@gmail.com";
+    }
+
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      return isSignedIn() && userEmail() == adminEmail();
     }
 
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
+    // Pre-approved = an allowlist doc keyed by the user's (lower-case) email.
+    function isApproved() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/allowlist/$(userEmail()));
     }
 
-    // Fields a normal user is NOT allowed to change on their own profile.
+    function canUse() {
+      return isApproved() || isAdmin();
+    }
+
+    // Fields a normal user may not change on their own profile.
     function protectedUnchanged() {
       return request.resource.data.role == resource.data.role
         && request.resource.data.email == resource.data.email
         && request.resource.data.approved == resource.data.approved;
     }
 
-    // User profiles + their progress.
     match /users/{uid} {
-      allow read:   if isOwner(uid) || isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin() || (isOwner(uid) && protectedUnchanged());
+      allow read:   if isAdmin() || (request.auth.uid == uid && canUse());
+      // Non-admins may only create their own profile as a "student" —
+      // the admin role can never be self-assigned.
+      allow create: if isAdmin()
+                    || (request.auth.uid == uid && canUse() && request.resource.data.role == 'student');
+      allow update: if isAdmin()
+                    || (request.auth.uid == uid && canUse() && protectedUnchanged());
       allow delete: if isAdmin();
 
-      // Progress sub-documents owned by the same user.
       match /{sub=**} {
-        allow read:  if isOwner(uid) || isAdmin();
-        allow write: if isOwner(uid) || isAdmin();
+        allow read, write: if isAdmin() || (request.auth.uid == uid && canUse());
       }
     }
 
-    // Pre-approved email allowlist (admin-managed).
-    // The server registration route uses the Admin SDK, which bypasses
-    // these rules, so it can check the allowlist regardless.
+    // Admin-managed email allowlist.
     match /allowlist/{emailId} {
       allow read, write: if isAdmin();
     }
 
-    // App-wide config: readable by any signed-in user, writable by admin.
+    // App-wide config: readable by approved users, writable by admin.
     match /config/{docId} {
-      allow read:  if isSignedIn();
+      allow read:  if canUse();
       allow write: if isAdmin();
     }
 
-    // Media references (SharePoint direct links), admin-managed,
-    // readable by signed-in users.
+    // Media references (SharePoint direct links), readable by approved users.
     match /media/{mediaId} {
-      allow read:  if isSignedIn();
+      allow read:  if canUse();
       allow write: if isAdmin();
     }
 
