@@ -1,5 +1,6 @@
 import "@/styles/legacy-dashboard.css";
 import "@/styles/auth.css";
+import "@/styles/admin.css";
 import AppShell from "@/components/dashboard/AppShell";
 import AuthGuard from "@/components/dashboard/AuthGuard";
 

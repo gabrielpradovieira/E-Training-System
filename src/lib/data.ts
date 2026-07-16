@@ -13,10 +13,18 @@ import {
   query,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { emailDocId, normalizeEmail } from "@/lib/email";
-import type { AllowlistEntry, UserProfile, VideoDoc, VideoInput } from "@/lib/types";
+import type {
+  AllowlistEntry,
+  CourseSection,
+  SectionInput,
+  UserProfile,
+  VideoDoc,
+  VideoInput,
+} from "@/lib/types";
 
 /**
  * Determines admin status by CAPABILITY, not by a client-side email compare —
@@ -138,28 +146,69 @@ export async function removeAllowlistEmail(email: string): Promise<void> {
   await deleteDoc(doc(db, "allowlist", emailDocId(normalizeEmail(email))));
 }
 
-/* ---------------- Training videos (read: approved; write: admin) --------------- */
+/* ---------------- Course: sections + videos (read: approved; write: admin) --------------- */
 
-/** All videos, grouped by topicId and sorted by order within each topic. */
-export async function fetchVideosByTopic(): Promise<Record<string, VideoDoc[]>> {
+/** The course's sections, in order. */
+export async function fetchSections(): Promise<CourseSection[]> {
+  const snap = await getDocs(collection(db, "sections"));
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title ?? "Untitled section",
+        description: data.description ?? "",
+        order: data.order ?? 0,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      } as CourseSection;
+    })
+    .sort((a, b) => a.order - b.order);
+}
+
+export async function createSection(input: SectionInput): Promise<string> {
+  const ref = await addDoc(collection(db, "sections"), {
+    ...input,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+  return ref.id;
+}
+
+export async function updateSection(id: string, patch: Partial<SectionInput>): Promise<void> {
+  await updateDoc(doc(db, "sections", id), { ...patch, updatedAt: Date.now() });
+}
+
+/** Deletes a section and every video inside it. */
+export async function deleteSection(id: string): Promise<void> {
+  const videos = await getDocs(query(collection(db, "videos"), where("sectionId", "==", id)));
+  await Promise.all(videos.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, "sections", id));
+}
+
+/** All videos, grouped by sectionId and sorted by order within each section. */
+export async function fetchVideosBySection(): Promise<Record<string, VideoDoc[]>> {
   const snap = await getDocs(collection(db, "videos"));
-  const byTopic: Record<string, VideoDoc[]> = {};
+  const bySection: Record<string, VideoDoc[]> = {};
   snap.docs.forEach((d) => {
     const data = d.data();
     const video: VideoDoc = {
       id: d.id,
-      topicId: data.topicId ?? "",
+      sectionId: data.sectionId ?? "",
       order: data.order ?? 0,
       title: data.title ?? "Untitled",
+      description: data.description ?? "",
       embedUrl: data.embedUrl ?? "",
+      requiredTools: Array.isArray(data.requiredTools) ? data.requiredTools : [],
       materials: Array.isArray(data.materials) ? data.materials : [],
+      instructions: data.instructions ?? "",
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
-    (byTopic[video.topicId] ??= []).push(video);
+    (bySection[video.sectionId] ??= []).push(video);
   });
-  Object.values(byTopic).forEach((list) => list.sort((a, b) => a.order - b.order));
-  return byTopic;
+  Object.values(bySection).forEach((list) => list.sort((a, b) => a.order - b.order));
+  return bySection;
 }
 
 export async function createVideo(input: VideoInput): Promise<string> {
@@ -173,11 +222,26 @@ export async function createVideo(input: VideoInput): Promise<string> {
 
 export async function updateVideo(
   id: string,
-  patch: Partial<Omit<VideoInput, "topicId">>,
+  patch: Partial<Omit<VideoInput, "sectionId">>,
 ): Promise<void> {
   await updateDoc(doc(db, "videos", id), { ...patch, updatedAt: Date.now() });
 }
 
 export async function deleteVideo(id: string): Promise<void> {
   await deleteDoc(doc(db, "videos", id));
+}
+
+/**
+ * Swaps the `order` of two documents — the primitive behind the up/down
+ * reorder arrows.
+ */
+export async function swapOrder(
+  collectionName: "sections" | "videos",
+  a: { id: string; order: number },
+  b: { id: string; order: number },
+): Promise<void> {
+  await Promise.all([
+    updateDoc(doc(db, collectionName, a.id), { order: b.order, updatedAt: Date.now() }),
+    updateDoc(doc(db, collectionName, b.id), { order: a.order, updatedAt: Date.now() }),
+  ]);
 }

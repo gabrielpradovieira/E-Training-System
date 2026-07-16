@@ -6,9 +6,17 @@ import { extractEmbedSrc } from "@/lib/sharepoint";
 
 export type VideoModalData = {
   title: string;
+  description: string;
   embedUrl: string;
+  requiredTools: string[];
   materials: VideoMaterial[];
+  instructions: string;
 };
+
+export type VideoModalInitial = Pick<
+  VideoDoc,
+  "title" | "description" | "embedUrl" | "requiredTools" | "materials" | "instructions"
+>;
 
 /**
  * Mount a fresh instance per open (via a changing `key` from the parent), so
@@ -21,12 +29,15 @@ export default function VideoEditModal({
   onSave,
 }: {
   mode: "create" | "edit";
-  initial?: Pick<VideoDoc, "title" | "embedUrl" | "materials"> | null;
+  initial?: VideoModalInitial | null;
   onClose: () => void;
   onSave: (data: VideoModalData) => Promise<void>;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [embedUrl, setEmbedUrl] = useState(initial?.embedUrl ?? "");
+  const [tools, setTools] = useState(initial?.requiredTools?.join(", ") ?? "");
+  const [instructions, setInstructions] = useState(initial?.instructions ?? "");
   const [materials, setMaterials] = useState<VideoMaterial[]>(initial?.materials ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,15 +52,18 @@ export default function VideoEditModal({
     try {
       await onSave({
         title: title.trim() || "Untitled video",
+        description: description.trim(),
         // Accept a full <iframe> embed snippet or a bare URL.
         embedUrl: extractEmbedSrc(embedUrl),
-        // Drop empty rows.
+        requiredTools: tools
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         materials: materials.filter((m) => m.label.trim() || m.url.trim()),
+        instructions: instructions.trim(),
       });
     } catch {
-      setError(
-        "Couldn't save. Make sure the updated firestore.rules are published and you're signed in as admin.",
-      );
+      setError("Couldn't save. Make sure the latest firestore.rules are published and you're admin.");
       setSaving(false);
     }
   }
@@ -59,18 +73,27 @@ export default function VideoEditModal({
       <div className="video-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <h3>{mode === "create" ? "Add video" : "Edit video"}</h3>
         <p className="video-modal-sub">
-          Paste the OneDrive / SharePoint <strong>embed code</strong> (or just the link) and attach any learning materials.
+          Everything here is what students see on the Training page for this video.
         </p>
 
         {error && <div className="video-modal-error">{error}</div>}
 
-        <label htmlFor="vm-title">Video title</label>
+        <label htmlFor="vm-title">Title</label>
         <input
           id="vm-title"
           type="text"
           value={title}
-          placeholder="e.g. Overview and objectives"
+          placeholder="e.g. Interface and menus"
           onChange={(e) => setTitle(e.target.value)}
+        />
+
+        <label htmlFor="vm-desc">Description</label>
+        <textarea
+          id="vm-desc"
+          rows={3}
+          value={description}
+          placeholder="What this lesson covers…"
+          onChange={(e) => setDescription(e.target.value)}
         />
 
         <label htmlFor="vm-embed">OneDrive embed code or link</label>
@@ -82,7 +105,25 @@ export default function VideoEditModal({
           onChange={(e) => setEmbedUrl(e.target.value)}
         />
 
-        <label>Learning materials</label>
+        <label htmlFor="vm-tools">Required tools <span className="vm-hint">(comma separated)</span></label>
+        <input
+          id="vm-tools"
+          type="text"
+          value={tools}
+          placeholder="Adobe Photoshop, Drawing tablet"
+          onChange={(e) => setTools(e.target.value)}
+        />
+
+        <label htmlFor="vm-instructions">Instructions</label>
+        <textarea
+          id="vm-instructions"
+          rows={4}
+          value={instructions}
+          placeholder="Steps the student should follow for this lesson's task…"
+          onChange={(e) => setInstructions(e.target.value)}
+        />
+
+        <label>Media files</label>
         {materials.map((material, index) => (
           <div className="material-row" key={index}>
             <input
@@ -100,7 +141,7 @@ export default function VideoEditModal({
             <button
               type="button"
               className="material-remove"
-              aria-label="Remove material"
+              aria-label="Remove media file"
               onClick={() => setMaterials((prev) => prev.filter((_, i) => i !== index))}
             >
               &times;
@@ -112,7 +153,7 @@ export default function VideoEditModal({
           className="material-add"
           onClick={() => setMaterials((prev) => [...prev, { label: "", url: "" }])}
         >
-          + Add material link
+          + Add media file
         </button>
 
         <div className="video-modal-actions">

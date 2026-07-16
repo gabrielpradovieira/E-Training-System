@@ -43,9 +43,28 @@ export const pageMeta: Record<string, PageMeta> = {
   admin: {
     title: "Admin Panel",
     icon: "/assets/icon-sidebar-marking.svg",
-    description: "Manage users, approved emails, and monitor overall progress.",
+    description: "Manage users and build the course.",
+  },
+  "admin/users": {
+    title: "Users",
+    icon: "/assets/icon-sidebar-marking.svg",
+    description: "Manage approved emails, users, and monitor overall progress.",
+  },
+  "admin/course": {
+    title: "Course",
+    icon: "/assets/icon-sidebar-training.svg",
+    description: "Build the course: sections, videos, and their instructions.",
   },
 };
+
+/** Resolves the page meta for a path, including admin sub-pages. */
+export function metaForPath(pathname: string): PageMeta {
+  const segments = pathname.split("/").filter(Boolean);
+  const twoLevel = segments.slice(0, 2).join("/");
+  if (pageMeta[twoLevel]) return pageMeta[twoLevel];
+  const slug = segments[0];
+  return pageMeta[slug] ?? pageMeta.dashboard;
+}
 
 export const navItems: { slug: string; label: string; icon: string }[] = [
   { slug: "dashboard", label: "Dashboard", icon: "/assets/icon-sidebar-dashboard.svg" },

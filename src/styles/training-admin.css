@@ -41,6 +41,13 @@
   text-decoration: underline;
 }
 
+.video-instructions {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 /* ---- Admin affordances in the curriculum list ---- */
 /* The title/number fill the row; the edit controls live in thin hover zones
    at the far left and right that expand (sliding the title in) only when the
@@ -237,7 +244,8 @@
   margin: 14px 0 6px;
 }
 
-.video-modal input {
+.video-modal input,
+.video-modal textarea {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
@@ -245,11 +253,140 @@
   background: var(--card-inner);
   color: var(--text);
   font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
 }
 
-.video-modal input:focus {
+.video-modal input:focus,
+.video-modal textarea:focus {
   outline: none;
   border-color: var(--blue);
+}
+
+.vm-hint {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* ---- Course editor (/admin/course) ---- */
+.course-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.course-section {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card-inner);
+  overflow: hidden;
+}
+
+.course-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.course-section-index {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.course-section-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.course-section-copy strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.course-section-copy p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.course-section-edit {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.course-section-edit input {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.course-section-actions,
+.course-video-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.course-videos {
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.course-video-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.course-video-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.course-video-copy strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.course-video-copy p {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* In the course editor the action buttons are always visible. */
+.course-section-actions .vid-edit-btn,
+.course-section-actions .vid-delete-btn,
+.course-video-actions .vid-edit-btn,
+.course-video-actions .vid-delete-btn {
+  opacity: 1;
+}
+
+.course-section-actions button:disabled,
+.course-video-actions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .material-row {

@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { navItems, pageMeta } from "@/lib/pageMeta";
+import { metaForPath, navItems, pageMeta } from "@/lib/pageMeta";
 import { useAuth } from "@/lib/auth-context";
 
 const EVENT_TARGET = new Date("2026-10-24T00:00:00+04:00");
@@ -20,7 +20,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAdmin, signOut } = useAuth();
   const slug = currentSlug(pathname);
-  const meta = pageMeta[slug];
+  const meta = metaForPath(pathname);
 
   const displayName = user?.displayName || user?.email || "Competitor";
 
@@ -32,6 +32,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [countdown, setCountdown] = useState("-- days left");
+  // Keep the admin accordion open while on an admin page.
+  const [adminOpen, setAdminOpen] = useState(slug === "admin");
 
   useEffect(() => {
     // Hydrate the persisted theme on mount (localStorage is client-only).
@@ -97,10 +99,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="link-text">{item.label}</span>
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className={`menu-link${slug === "admin" ? " active" : ""}`}
+          </div>
+
+          {isAdmin && (
+            <div className="menu-section">
+              <div className="menu-label">Admin</div>
+              <button
+                className={`menu-link admin-accordion-btn${adminOpen ? " open" : ""}${slug === "admin" ? " active" : ""}`}
+                type="button"
+                aria-expanded={adminOpen}
+                onClick={() => setAdminOpen((prev) => !prev)}
               >
                 <img
                   className="link-icon sidebar-vector-icon"
@@ -109,9 +117,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   aria-hidden="true"
                 />
                 <span className="link-text">Admin Panel</span>
-              </Link>
-            )}
-          </div>
+                <span className="admin-accordion-arrow" aria-hidden="true">&rsaquo;</span>
+              </button>
+              <div className={`admin-submenu${adminOpen ? " open" : ""}`}>
+                <Link
+                  href="/admin/users"
+                  className={`admin-submenu-link${pathname.startsWith("/admin/users") ? " active" : ""}`}
+                >
+                  Users
+                </Link>
+                <Link
+                  href="/admin/course"
+                  className={`admin-submenu-link${pathname.startsWith("/admin/course") ? " active" : ""}`}
+                >
+                  Course
+                </Link>
+              </div>
+            </div>
+          )}
         </nav>
 
         <div className="sidebar-actions">

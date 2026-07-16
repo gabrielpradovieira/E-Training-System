@@ -87,6 +87,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Course sections: approved users read; only the admin builds them.
+    match /sections/{sectionId} {
+      allow read:  if canUse();
+      allow write: if isAdmin();
+    }
+
     // Training videos: approved users watch; only the admin manages them.
     match /videos/{videoId} {
       allow read:  if canUse();

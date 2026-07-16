@@ -1,10 +1,10 @@
-export type CurriculumLevel = "foundation" | "intermediate" | "advanced";
-
-export const curriculumLevels: Record<CurriculumLevel, number[]> = {
-  foundation: [1],
-  intermediate: [2],
-  advanced: [3, 4, 5, 6, 7],
-};
+/**
+ * The EmiratesSkills competence framework for skill #50 (3D Digital Game Art).
+ *
+ * This is the fixed assessment framework shown on the Competences page. It is
+ * NOT the course: the course (sections + videos) is built by the admin under
+ * Admin → Course and stored in Firestore.
+ */
 
 export const coreCompetences: Record<number, string> = {
   1: "Create 2D original designs for game assets and apply 3D modeling techniques to create models with optimization and efficiency.",
@@ -53,94 +53,3 @@ export const competenceUnits: CompetenceUnit[] = [
   { cu: 32, core: 7, title: "Apply advanced modelling and texturing workflows for production assets" },
   { cu: 33, core: 7, title: "Develop solid workflow across softwares for accurate execution of multiple tasks" },
 ];
-
-export type ResourcePrompt = { type: "task" | "doc"; label: string };
-
-export const curriculumResourcePrompts: ResourcePrompt[] = [
-  { type: "task", label: "Sketch Sonic from reference" },
-  { type: "doc", label: "Photoshop brush setup guide" },
-  { type: "task", label: "Block out a simple prop silhouette" },
-  { type: "doc", label: "Maya modelling shortcuts sheet" },
-  { type: "task", label: "Clean topology check on a hard-surface model" },
-  { type: "doc", label: "ZBrush sculpting checklist" },
-  { type: "task", label: "Create UV shells for a small game asset" },
-  { type: "doc", label: "PBR texture export settings" },
-  { type: "task", label: "Bake normal maps for a game-ready asset" },
-  { type: "doc", label: "Rig naming convention reference" },
-  { type: "task", label: "Animate a bouncing ball timing pass" },
-  { type: "doc", label: "Unreal Engine import checklist" },
-  { type: "task", label: "Build a small interactive blueprint trigger" },
-  { type: "doc", label: "Playable demo submission checklist" },
-  { type: "task", label: "Create three original concept thumbnails" },
-  { type: "doc", label: "Topology flow examples" },
-  { type: "task", label: "Speed model a mechanical detail asset" },
-  { type: "doc", label: "Advanced painting layer structure" },
-  { type: "task", label: "Polish an animation loop for presentation" },
-  { type: "doc", label: "Final production workflow checklist" },
-];
-
-export type CurriculumItemType = "video" | "task" | "doc";
-
-export type CurriculumLessonItem = {
-  itemType: CurriculumItemType;
-  label: string;
-  meta: string;
-  initiallyWatched: boolean;
-};
-
-export type CurriculumUnitEntry = {
-  cu: number;
-  core: number;
-  title: string;
-  topicId: string;
-  items: CurriculumLessonItem[];
-};
-
-export type CurriculumCoreGroup = {
-  core: number;
-  description: string;
-  units: CurriculumUnitEntry[];
-};
-
-/** Mirrors the legacy renderCompetenceUnitCurriculum() logic for a given level. */
-export function buildCurriculumForLevel(level: CurriculumLevel): CurriculumCoreGroup[] {
-  const activeCores = curriculumLevels[level] ?? curriculumLevels.foundation;
-  const visibleUnits = competenceUnits.filter((unit) => activeCores.includes(unit.core));
-
-  const groups: CurriculumCoreGroup[] = [];
-  let lastCore: number | null = null;
-
-  visibleUnits.forEach((unit) => {
-    if (unit.core !== lastCore) {
-      groups.push({ core: unit.core, description: coreCompetences[unit.core], units: [] });
-      lastCore = unit.core;
-    }
-
-    const watched = unit.cu <= 5;
-    const items: CurriculumLessonItem[] = [
-      { itemType: "video", label: "Overview and objectives", meta: "5 min", initiallyWatched: watched },
-      { itemType: "video", label: "Tool workflow tutorial", meta: "12 min", initiallyWatched: watched },
-      { itemType: "video", label: "Practice walkthrough", meta: "19 min", initiallyWatched: watched },
-    ];
-
-    if (unit.cu % 2 === 0 || unit.cu % 10 === 5 || unit.cu === 33) {
-      const prompt = curriculumResourcePrompts[(unit.cu - 1) % curriculumResourcePrompts.length];
-      items.push({
-        itemType: prompt.type,
-        label: prompt.label,
-        meta: prompt.type === "task" ? "Task" : "Resource",
-        initiallyWatched: false,
-      });
-    }
-
-    groups[groups.length - 1].units.push({
-      cu: unit.cu,
-      core: unit.core,
-      title: unit.title,
-      topicId: `course-cu-${unit.cu}`,
-      items,
-    });
-  });
-
-  return groups;
-}
