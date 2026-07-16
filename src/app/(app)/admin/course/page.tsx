@@ -15,8 +15,9 @@ import {
   updateSection,
   updateVideo,
 } from "@/lib/data";
-import type { CourseSection, VideoDoc } from "@/lib/types";
+import { COURSE_LEVELS, type CourseLevel, type CourseSection, type VideoDoc } from "@/lib/types";
 import VideoEditModal, { type VideoModalData } from "@/components/VideoEditModal";
+import CourseImport from "@/components/CourseImport";
 
 type ModalState =
   | { open: false }
@@ -62,7 +63,11 @@ export default function AdminCoursePage() {
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>({ open: false });
 
-  const [newSectionTitle, setNewSectionTitle] = useState("");
+  const [newSection, setNewSection] = useState<{ title: string; level: CourseLevel; core: string }>({
+    title: "",
+    level: "foundation",
+    core: "",
+  });
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [sectionDraft, setSectionDraft] = useState({ title: "", description: "" });
 
@@ -102,12 +107,18 @@ export default function AdminCoursePage() {
 
   async function addSection(e: React.FormEvent) {
     e.preventDefault();
-    const title = newSectionTitle.trim();
+    const title = newSection.title.trim();
     if (!title) return;
     const order = sections.length ? sections[sections.length - 1].order + 1 : 0;
     await guard(async () => {
-      await createSection({ title, description: "", order });
-      setNewSectionTitle("");
+      await createSection({
+        title,
+        level: newSection.level,
+        core: newSection.core.trim(),
+        description: "",
+        order,
+      });
+      setNewSection({ title: "", level: newSection.level, core: newSection.core });
     }, "Couldn't add the section.");
   }
 
@@ -167,18 +178,36 @@ export default function AdminCoursePage() {
       <div className="admin-page">
         {error && <div className="admin-error">{error}</div>}
 
+        <CourseImport onImported={loadData} />
+
         <section className="admin-card">
           <h2>Course structure</h2>
           <p className="admin-card-sub">
-            The Training page is built from exactly what you set up here — sections in order, each with its videos.
+            The Training page is built from exactly what you set up here. Each section is a Competence Unit,
+            shown under its Level tab and grouped by Core Competence.
           </p>
 
           <form className="admin-add-form" onSubmit={addSection}>
+            <select
+              value={newSection.level}
+              onChange={(e) => setNewSection((s) => ({ ...s, level: e.target.value as CourseLevel }))}
+              aria-label="Level"
+            >
+              {COURSE_LEVELS.map((l) => (
+                <option key={l.level} value={l.level}>{l.label}</option>
+              ))}
+            </select>
             <input
               type="text"
-              placeholder="New section title (e.g. Adobe Photoshop)"
-              value={newSectionTitle}
-              onChange={(e) => setNewSectionTitle(e.target.value)}
+              placeholder="Core (e.g. 1)"
+              value={newSection.core}
+              onChange={(e) => setNewSection((s) => ({ ...s, core: e.target.value }))}
+            />
+            <input
+              type="text"
+              placeholder="Competence Unit title"
+              value={newSection.title}
+              onChange={(e) => setNewSection((s) => ({ ...s, title: e.target.value }))}
             />
             <button className="admin-btn" type="submit">Add section</button>
           </form>
@@ -217,7 +246,13 @@ export default function AdminCoursePage() {
                         <>
                           <div className="course-section-copy">
                             <strong>{section.title}</strong>
-                            {section.description && <p>{section.description}</p>}
+                            <p>
+                              <span className={`level-chip ${section.level}`}>
+                                {COURSE_LEVELS.find((l) => l.level === section.level)?.label ?? section.level}
+                              </span>
+                              {section.core && <span> · Core {section.core}</span>}
+                              {section.description && <span> · {section.description}</span>}
+                            </p>
                           </div>
                           <div className="course-section-actions">
                             <button className="vid-edit-btn" type="button" aria-label="Move section up" disabled={sIndex === 0} onClick={() => moveSection(sIndex, -1)}><ArrowUp /></button>

@@ -5,15 +5,21 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { fetchSections, fetchVideosBySection } from "@/lib/data";
-import type { CourseSection, VideoDoc } from "@/lib/types";
+import { COURSE_LEVELS, type CourseLevel, type CourseSection, type VideoDoc } from "@/lib/types";
 
 const CERTIFICATE_PERCENT = 15;
+
+/** "Core Competence 1" when the value is a number, otherwise the label as-is. */
+function coreHeading(core: string): string {
+  return /^\d+$/.test(core.trim()) ? `Core Competence ${core.trim()}` : core.trim();
+}
 
 export default function TrainingPage() {
   const { isAdmin } = useAuth();
 
   const [sections, setSections] = useState<CourseSection[]>([]);
   const [videosBySection, setVideosBySection] = useState<Record<string, VideoDoc[]>>({});
+  const [activeLevel, setActiveLevel] = useState<CourseLevel>("foundation");
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const [watched, setWatched] = useState<Set<string>>(new Set());
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
@@ -38,12 +44,32 @@ export default function TrainingPage() {
     load();
   }, [load]);
 
-  // Flat, ordered list across the whole course (for prev/next).
+  // Sections in the active level, grouped by Core Competence (first-seen order).
+  const coreGroups = useMemo(() => {
+    const groups: { core: string; units: CourseSection[] }[] = [];
+    const byCore = new Map<string, CourseSection[]>();
+    sections
+      .filter((s) => s.level === activeLevel)
+      .forEach((s) => {
+        const key = s.core ?? "";
+        if (!byCore.has(key)) {
+          const units: CourseSection[] = [];
+          byCore.set(key, units);
+          groups.push({ core: key, units });
+        }
+        byCore.get(key)!.push(s);
+      });
+    return groups;
+  }, [sections, activeLevel]);
+
+  // Flat, ordered list within the active level (for prev/next).
   const flatVideos = useMemo(() => {
     const list: VideoDoc[] = [];
-    sections.forEach((section) => (videosBySection[section.id] ?? []).forEach((v) => list.push(v)));
+    coreGroups.forEach((group) =>
+      group.units.forEach((unit) => (videosBySection[unit.id] ?? []).forEach((v) => list.push(v))),
+    );
     return list;
-  }, [sections, videosBySection]);
+  }, [coreGroups, videosBySection]);
 
   const currentIndex = currentVideoId ? flatVideos.findIndex((v) => v.id === currentVideoId) : -1;
   const currentVideo = currentIndex >= 0 ? flatVideos[currentIndex] : null;
@@ -241,6 +267,24 @@ export default function TrainingPage() {
                 <h3>Course Curriculum</h3>
               </div>
               {loadError && <p className="vid-empty">{loadError}</p>}
+              <div className="curriculum-level-tabs" role="tablist" aria-label="Curriculum level filter">
+                {COURSE_LEVELS.map((tab) => (
+                  <button
+                    key={tab.level}
+                    className={`curriculum-level-tab${activeLevel === tab.level ? " active" : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeLevel === tab.level}
+                    onClick={() => {
+                      setActiveLevel(tab.level);
+                      setOpenSections(new Set());
+                      setCurrentVideoId(null);
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="accordion-container curriculum-cu-list">
               {loading ? (
@@ -250,57 +294,68 @@ export default function TrainingPage() {
                   The course hasn&apos;t been set up yet.{" "}
                   {isAdmin && <Link href="/admin/course">Build it in Admin → Course.</Link>}
                 </p>
+              ) : coreGroups.length === 0 ? (
+                <p className="vid-empty">Nothing in this level yet.</p>
               ) : (
-                sections.map((section, sIndex) => {
-                  const videos = videosBySection[section.id] ?? [];
-                  const isOpen = openSections.has(section.id);
-                  return (
-                    <div className="accordion-topic curriculum-cu-topic" key={section.id}>
-                      <button
-                        className={`accordion-btn${isOpen ? " active" : ""}`}
-                        type="button"
-                        onClick={() => toggleSection(section.id)}
-                      >
-                        <span className="curriculum-cu-code">{String(sIndex + 1).padStart(2, "0")}</span>
-                        <span className="topic-copy">
-                          <span className="topic-title">{section.title}</span>
-                        </span>
-                        <span className="accordion-arrow">&rsaquo;</span>
-                      </button>
-                      <div className={`accordion-content${isOpen ? " active" : ""}`} id={section.id}>
-                        {section.description && <p className="vid-empty">{section.description}</p>}
-                        {videos.length === 0 ? (
-                          <p className="vid-empty">No videos yet.</p>
-                        ) : (
-                          videos.map((video, vIndex) => {
-                            const isWatched = watched.has(video.id);
-                            const isCurrent = currentVideoId === video.id;
-                            return (
-                              <div className="vid-row" key={video.id}>
-                                <div
-                                  className={`detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`}
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-pressed={isWatched}
-                                  onClick={() => selectVideo(video)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      selectVideo(video);
-                                    }
-                                  }}
-                                >
-                                  <span className="vid-number">{String(vIndex + 1).padStart(2, "0")}</span>
-                                  <span className="lesson-label">{video.title}</span>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
+                coreGroups.map((group) => (
+                  <div key={group.core || "ungrouped"}>
+                    {group.core && (
+                      <div className="curriculum-core-heading">
+                        <span>{coreHeading(group.core)}</span>
                       </div>
-                    </div>
-                  );
-                })
+                    )}
+                    {group.units.map((section, sIndex) => {
+                      const videos = videosBySection[section.id] ?? [];
+                      const isOpen = openSections.has(section.id);
+                      return (
+                        <div className="accordion-topic curriculum-cu-topic" key={section.id}>
+                          <button
+                            className={`accordion-btn${isOpen ? " active" : ""}`}
+                            type="button"
+                            onClick={() => toggleSection(section.id)}
+                          >
+                            <span className="curriculum-cu-code">{String(sIndex + 1).padStart(2, "0")}</span>
+                            <span className="topic-copy">
+                              <span className="topic-title">{section.title}</span>
+                            </span>
+                            <span className="accordion-arrow">&rsaquo;</span>
+                          </button>
+                          <div className={`accordion-content${isOpen ? " active" : ""}`} id={section.id}>
+                            {section.description && <p className="vid-empty">{section.description}</p>}
+                            {videos.length === 0 ? (
+                              <p className="vid-empty">No videos yet.</p>
+                            ) : (
+                              videos.map((video, vIndex) => {
+                                const isWatched = watched.has(video.id);
+                                const isCurrent = currentVideoId === video.id;
+                                return (
+                                  <div className="vid-row" key={video.id}>
+                                    <div
+                                      className={`detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`}
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-pressed={isWatched}
+                                      onClick={() => selectVideo(video)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                          e.preventDefault();
+                                          selectVideo(video);
+                                        }
+                                      }}
+                                    >
+                                      <span className="vid-number">{String(vIndex + 1).padStart(2, "0")}</span>
+                                      <span className="lesson-label">{video.title}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
               )}
             </div>
           </div>

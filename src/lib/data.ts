@@ -17,6 +17,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { emailDocId, normalizeEmail } from "@/lib/email";
+import { extractEmbedSrc } from "@/lib/sharepoint";
+import type { CourseImportRow } from "@/lib/csv";
 import type {
   AllowlistEntry,
   CourseSection,
@@ -156,6 +158,8 @@ export async function fetchSections(): Promise<CourseSection[]> {
       const data = d.data();
       return {
         id: d.id,
+        level: data.level ?? "foundation",
+        core: data.core ?? "",
         title: data.title ?? "Untitled section",
         description: data.description ?? "",
         order: data.order ?? 0,
@@ -229,6 +233,95 @@ export async function updateVideo(
 
 export async function deleteVideo(id: string): Promise<void> {
   await deleteDoc(doc(db, "videos", id));
+}
+
+export type ImportSummary = {
+  sectionsCreated: number;
+  videosCreated: number;
+  videosUpdated: number;
+};
+
+/**
+ * Imports spreadsheet rows into the course.
+ *
+ * Matching is by (level + core + unit) for sections and by title within a
+ * section for videos, so re-importing the same sheet UPDATES rows instead of
+ * duplicating them. Nothing is deleted.
+ */
+export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportSummary> {
+  const existingSections = await fetchSections();
+  const existingVideos = await fetchVideosBySection();
+
+  const sectionKey = (level: string, core: string, title: string) =>
+    `${level}||${core.trim().toLowerCase()}||${title.trim().toLowerCase()}`;
+
+  const sectionByKey = new Map<string, CourseSection>();
+  existingSections.forEach((s) => sectionByKey.set(sectionKey(s.level, s.core, s.title), s));
+
+  let nextOrder = existingSections.length
+    ? Math.max(...existingSections.map((s) => s.order)) + 1
+    : 0;
+
+  const summary: ImportSummary = { sectionsCreated: 0, videosCreated: 0, videosUpdated: 0 };
+  // Videos added during this import, so ordering continues correctly.
+  const addedTitles = new Map<string, Set<string>>();
+  const orderCursor = new Map<string, number>();
+
+  for (const row of rows) {
+    const key = sectionKey(row.level, row.core, row.unit);
+    let section = sectionByKey.get(key);
+
+    if (!section) {
+      const id = await createSection({
+        level: row.level,
+        core: row.core,
+        title: row.unit,
+        description: "",
+        order: nextOrder++,
+      });
+      section = { id, level: row.level, core: row.core, title: row.unit, description: "", order: nextOrder - 1 };
+      sectionByKey.set(key, section);
+      summary.sectionsCreated += 1;
+    }
+
+    const sectionVideos = existingVideos[section.id] ?? [];
+    if (!orderCursor.has(section.id)) {
+      orderCursor.set(section.id, sectionVideos.length ? Math.max(...sectionVideos.map((v) => v.order)) + 1 : 0);
+    }
+    if (!addedTitles.has(section.id)) addedTitles.set(section.id, new Set());
+
+    const embedUrl = extractEmbedSrc(row.videoLink);
+    const match = sectionVideos.find(
+      (v) => v.title.trim().toLowerCase() === row.title.trim().toLowerCase(),
+    );
+
+    if (match) {
+      await updateVideo(match.id, {
+        title: row.title,
+        description: row.description,
+        embedUrl,
+        requiredTools: row.requiredTools,
+      });
+      summary.videosUpdated += 1;
+    } else if (!addedTitles.get(section.id)!.has(row.title.trim().toLowerCase())) {
+      const order = orderCursor.get(section.id)!;
+      orderCursor.set(section.id, order + 1);
+      await createVideo({
+        sectionId: section.id,
+        order,
+        title: row.title,
+        description: row.description,
+        embedUrl,
+        requiredTools: row.requiredTools,
+        materials: [],
+        instructions: "",
+      });
+      addedTitles.get(section.id)!.add(row.title.trim().toLowerCase());
+      summary.videosCreated += 1;
+    }
+  }
+
+  return summary;
 }
 
 /**

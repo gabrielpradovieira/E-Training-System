@@ -25,9 +25,25 @@ export type VideoMaterial = {
   url: string;
 };
 
-/** A section of the course. The course is a linear, admin-built list of these. */
+export type CourseLevel = "foundation" | "intermediate" | "advanced";
+
+export const COURSE_LEVELS: { level: CourseLevel; label: string }[] = [
+  { level: "foundation", label: "Foundation" },
+  { level: "intermediate", label: "Intermediate" },
+  { level: "advanced", label: "Advanced" },
+];
+
+/**
+ * A section of the course = one Competence Unit. Sections are grouped by
+ * `core` (Core Competence) and filtered by `level` on the Training page.
+ */
 export type CourseSection = {
   id: string;
+  /** Which level tab this section appears under. */
+  level: CourseLevel;
+  /** Core Competence this unit belongs to (e.g. "1" or a label). */
+  core: string;
+  /** The Competence Unit title. */
   title: string;
   description: string;
   /** Sort position within the course (fractional inserts allowed). */
@@ -37,6 +53,8 @@ export type CourseSection = {
 };
 
 export type SectionInput = {
+  level: CourseLevel;
+  core: string;
   title: string;
   description: string;
   order: number;

@@ -166,15 +166,20 @@
   margin-bottom: 16px;
 }
 
-.admin-add-form input {
+.admin-add-form input,
+.admin-add-form select {
   flex: 1;
-  min-width: 160px;
+  min-width: 130px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--card-inner);
   color: var(--text);
   font-size: 0.9rem;
+}
+
+.admin-add-form select {
+  flex: 0 0 auto;
 }
 
 .admin-btn {
