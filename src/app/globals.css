@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
+/* Match the dashboard's own font stack (see legacy-dashboard.css) so Tailwind
+   utilities stay consistent with the ported design — and so the build never
+   depends on fetching webfonts. */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }

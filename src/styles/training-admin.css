@@ -42,10 +42,12 @@
 }
 
 /* ---- Admin affordances in the curriculum list ---- */
+/* The title/number fill the row; the edit controls live in thin hover zones
+   at the far left and right that expand (sliding the title in) only when the
+   pointer is over that zone. */
 .vid-row {
   display: flex;
   align-items: center;
-  gap: 4px;
 }
 
 .vid-row .detail-item {
@@ -70,8 +72,34 @@
   color: var(--blue);
 }
 
-/* Add (+) on the left and edit/delete on the right — hidden until the row
-   is hovered (or a control is focused for keyboard users). */
+/* Edge hover zones — thin & invisible when idle, expand on hover. */
+.vid-side {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 6px;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.15s ease, opacity 0.15s ease;
+}
+
+.vid-side.right {
+  justify-content: flex-end;
+}
+
+.vid-side.left:hover,
+.vid-side.left:focus-within {
+  width: 34px;
+  opacity: 1;
+}
+
+.vid-side.right:hover,
+.vid-side.right:focus-within {
+  width: 66px;
+  opacity: 1;
+}
+
 .vid-add-left,
 .vid-edit-btn,
 .vid-delete-btn {
@@ -84,39 +112,15 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.vid-row:hover .vid-add-left,
-.vid-row:hover .vid-edit-btn,
-.vid-row:hover .vid-delete-btn,
-.vid-add-left:focus-visible,
-.vid-edit-btn:focus-visible,
-.vid-delete-btn:focus-visible {
-  opacity: 1;
-}
-
-.vid-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.vid-add-left {
-  color: var(--blue);
-}
-
-.vid-add-left:hover {
-  background: rgba(38, 128, 194, 0.12);
-  border-color: var(--blue);
-}
-
+.vid-add-left,
 .vid-edit-btn {
   color: var(--blue);
 }
 
+.vid-add-left:hover,
 .vid-edit-btn:hover {
   background: rgba(38, 128, 194, 0.12);
   border-color: var(--blue);
@@ -143,7 +147,8 @@
   stroke-linejoin: round;
 }
 
-.vid-add-trailing {
+/* Only shown for an empty unit (nothing to hover otherwise). */
+.vid-add-row {
   width: 100%;
   border: 1px dashed var(--line);
   background: transparent;
@@ -153,12 +158,24 @@
   margin-top: 4px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: color 0.12s ease, border-color 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.vid-add-trailing:hover {
+.vid-add-row:hover {
   color: var(--blue);
   border-color: var(--blue);
+}
+
+.vid-add-row svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
 }
 
 .vid-empty {

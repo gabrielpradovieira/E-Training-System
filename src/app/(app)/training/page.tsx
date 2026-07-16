@@ -311,21 +311,23 @@ export default function TrainingPage() {
                             return (
                               <div className="vid-row" key={video.id}>
                                 {isAdmin && (
-                                  <button
-                                    className="vid-add-left"
-                                    type="button"
-                                    aria-label="Add a video here"
-                                    onClick={() =>
-                                      setModal({
-                                        open: true,
-                                        mode: "create",
-                                        topicId: unit.topicId,
-                                        order: insertOrder(videos, index - 1),
-                                      })
-                                    }
-                                  >
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                                  </button>
+                                  <div className="vid-side left">
+                                    <button
+                                      className="vid-add-left"
+                                      type="button"
+                                      aria-label="Add a video here"
+                                      onClick={() =>
+                                        setModal({
+                                          open: true,
+                                          mode: "create",
+                                          topicId: unit.topicId,
+                                          order: insertOrder(videos, index - 1),
+                                        })
+                                      }
+                                    >
+                                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                                    </button>
+                                  </div>
                                 )}
                                 <div
                                   className={`detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`}
@@ -347,7 +349,7 @@ export default function TrainingPage() {
                                   )}
                                 </div>
                                 {isAdmin && (
-                                  <div className="vid-actions">
+                                  <div className="vid-side right">
                                     <button
                                       className="vid-edit-btn"
                                       type="button"
@@ -378,20 +380,21 @@ export default function TrainingPage() {
                             );
                           })}
 
-                          {isAdmin && (
+                          {isAdmin && videos.length === 0 && (
                             <button
-                              className="vid-add-trailing"
+                              className="vid-add-row always"
                               type="button"
                               onClick={() =>
                                 setModal({
                                   open: true,
                                   mode: "create",
                                   topicId: unit.topicId,
-                                  order: insertOrder(videos, videos.length - 1),
+                                  order: 0,
                                 })
                               }
                             >
-                              + Add video
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                              Add first video
                             </button>
                           )}
                         </div>
