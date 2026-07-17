@@ -263,9 +263,37 @@
   transform: rotate(180deg);
 }
 
-/* ---- Level filter tabs on the builder ---- */
+/* ---- Level filter tabs on the builder ----
+   The .curriculum-level-tabs styles assume the dark blue curriculum sidebar
+   (translucent white track + white labels). On the light admin card that
+   renders as white-on-white, so recreate the sidebar's blue backdrop here to
+   get the exact same control. */
 .cb-level-tabs {
   margin-bottom: 18px;
+  max-width: 420px;
+  padding: 5px;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16)),
+    linear-gradient(135deg, var(--nav-1), var(--nav-2));
+  box-shadow: 0 1px 3px rgba(13, 59, 102, 0.25);
+}
+
+.cb-level-tabs .curriculum-level-tab {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cb-level-tabs .curriculum-level-tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.cb-level-tabs .curriculum-level-tab.active {
+  color: var(--nav-1);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
 /* ---- Competence Unit (nested inside a Core Competence) ---- */
