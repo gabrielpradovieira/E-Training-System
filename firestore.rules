@@ -87,7 +87,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Course sections: approved users read; only the admin builds them.
+    // Training material: Level -> Core Competence -> Competence Unit -> Videos.
+    // Approved users read; only the admin builds them.
+    match /cores/{coreId} {
+      allow read:  if canUse();
+      allow write: if isAdmin();
+    }
+
+    // Competence Units.
     match /sections/{sectionId} {
       allow read:  if canUse();
       allow write: if isAdmin();

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { mapCourseRows, parseCsv } from "@/lib/csv";
-import { importCourseRows, type ImportSummary } from "@/lib/data";
+import { importCourseRows, type ImportSummary } from "@/lib/course-data";
 
 const TEMPLATE_HEADERS =
   "LEVEL,CORE COMPETENCE,COMPETENCE UNIT,TITLE,DESCRIPTION,VIDEO LINK,REQUIRED TOOLS";
@@ -95,7 +95,8 @@ export default function CourseImport({ onImported }: { onImported: () => Promise
 
       {summary && (
         <div className="import-summary">
-          Imported: <strong>{summary.sectionsCreated}</strong> new section(s),{" "}
+          Imported: <strong>{summary.coresCreated}</strong> new core competence(s),{" "}
+          <strong>{summary.unitsCreated}</strong> new competence unit(s),{" "}
           <strong>{summary.videosCreated}</strong> new video(s),{" "}
           <strong>{summary.videosUpdated}</strong> updated.
         </div>

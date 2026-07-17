@@ -34,27 +34,45 @@ export const COURSE_LEVELS: { level: CourseLevel; label: string }[] = [
 ];
 
 /**
- * A section of the course = one Competence Unit. Sections are grouped by
- * `core` (Core Competence) and filtered by `level` on the Training page.
+ * Training material hierarchy:
+ *   Level -> Core Competence -> Competence Unit -> Videos
+ *
+ * The level lives on the Core Competence, so the level tabs filter cores
+ * (and everything under them).
  */
-export type CourseSection = {
+export type CoreCompetence = {
   id: string;
-  /** Which level tab this section appears under. */
   level: CourseLevel;
-  /** Core Competence this unit belongs to (e.g. "1" or a label). */
-  core: string;
-  /** The Competence Unit title. */
+  /** Shown as "Core Competence {title}" when numeric, else as-is. */
   title: string;
   description: string;
-  /** Sort position within the course (fractional inserts allowed). */
+  order: number;
+  createdAt?: number;
+  updatedAt?: number;
+};
+
+export type CoreInput = {
+  level: CourseLevel;
+  title: string;
+  description: string;
+  order: number;
+};
+
+/** A Competence Unit — belongs to a Core Competence, holds videos. */
+export type CourseSection = {
+  id: string;
+  coreId: string;
+  title: string;
+  /** The unit's learning objective. */
+  description: string;
+  /** Sort position within its core. */
   order: number;
   createdAt?: number;
   updatedAt?: number;
 };
 
 export type SectionInput = {
-  level: CourseLevel;
-  core: string;
+  coreId: string;
   title: string;
   description: string;
   order: number;

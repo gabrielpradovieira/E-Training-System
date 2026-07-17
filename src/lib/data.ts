@@ -2,7 +2,6 @@
 
 import type { User } from "firebase/auth";
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -12,21 +11,12 @@ import {
   orderBy,
   query,
   setDoc,
-  updateDoc,
-  where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { emailDocId, normalizeEmail } from "@/lib/email";
-import { extractEmbedSrc } from "@/lib/sharepoint";
-import type { CourseImportRow } from "@/lib/csv";
-import type {
-  AllowlistEntry,
-  CourseSection,
-  SectionInput,
-  UserProfile,
-  VideoDoc,
-  VideoInput,
-} from "@/lib/types";
+import type { AllowlistEntry, UserProfile } from "@/lib/types";
+
+// Training material (cores / units / videos) lives in course-data.ts.
 
 /**
  * Determines admin status by CAPABILITY, not by a client-side email compare —
@@ -148,205 +138,3 @@ export async function removeAllowlistEmail(email: string): Promise<void> {
   await deleteDoc(doc(db, "allowlist", emailDocId(normalizeEmail(email))));
 }
 
-/* ---------------- Course: sections + videos (read: approved; write: admin) --------------- */
-
-/** The course's sections, in order. */
-export async function fetchSections(): Promise<CourseSection[]> {
-  const snap = await getDocs(collection(db, "sections"));
-  return snap.docs
-    .map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        level: data.level ?? "foundation",
-        core: data.core ?? "",
-        title: data.title ?? "Untitled section",
-        description: data.description ?? "",
-        order: data.order ?? 0,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-      } as CourseSection;
-    })
-    .sort((a, b) => a.order - b.order);
-}
-
-export async function createSection(input: SectionInput): Promise<string> {
-  const ref = await addDoc(collection(db, "sections"), {
-    ...input,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-  return ref.id;
-}
-
-export async function updateSection(id: string, patch: Partial<SectionInput>): Promise<void> {
-  await updateDoc(doc(db, "sections", id), { ...patch, updatedAt: Date.now() });
-}
-
-/** Deletes a section and every video inside it. */
-export async function deleteSection(id: string): Promise<void> {
-  const videos = await getDocs(query(collection(db, "videos"), where("sectionId", "==", id)));
-  await Promise.all(videos.docs.map((d) => deleteDoc(d.ref)));
-  await deleteDoc(doc(db, "sections", id));
-}
-
-/** All videos, grouped by sectionId and sorted by order within each section. */
-export async function fetchVideosBySection(): Promise<Record<string, VideoDoc[]>> {
-  const snap = await getDocs(collection(db, "videos"));
-  const bySection: Record<string, VideoDoc[]> = {};
-  snap.docs.forEach((d) => {
-    const data = d.data();
-    const video: VideoDoc = {
-      id: d.id,
-      sectionId: data.sectionId ?? "",
-      order: data.order ?? 0,
-      title: data.title ?? "Untitled",
-      description: data.description ?? "",
-      embedUrl: data.embedUrl ?? "",
-      requiredTools: Array.isArray(data.requiredTools) ? data.requiredTools : [],
-      materials: Array.isArray(data.materials) ? data.materials : [],
-      instructions: data.instructions ?? "",
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-    };
-    (bySection[video.sectionId] ??= []).push(video);
-  });
-  Object.values(bySection).forEach((list) => list.sort((a, b) => a.order - b.order));
-  return bySection;
-}
-
-export async function createVideo(input: VideoInput): Promise<string> {
-  const ref = await addDoc(collection(db, "videos"), {
-    ...input,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-  return ref.id;
-}
-
-export async function updateVideo(
-  id: string,
-  patch: Partial<Omit<VideoInput, "sectionId">>,
-): Promise<void> {
-  await updateDoc(doc(db, "videos", id), { ...patch, updatedAt: Date.now() });
-}
-
-export async function deleteVideo(id: string): Promise<void> {
-  await deleteDoc(doc(db, "videos", id));
-}
-
-export type ImportSummary = {
-  sectionsCreated: number;
-  videosCreated: number;
-  videosUpdated: number;
-};
-
-/**
- * Imports spreadsheet rows into the course.
- *
- * Matching is by (level + core + unit) for sections and by title within a
- * section for videos, so re-importing the same sheet UPDATES rows instead of
- * duplicating them. Nothing is deleted.
- */
-export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportSummary> {
-  const existingSections = await fetchSections();
-  const existingVideos = await fetchVideosBySection();
-
-  const sectionKey = (level: string, core: string, title: string) =>
-    `${level}||${core.trim().toLowerCase()}||${title.trim().toLowerCase()}`;
-
-  const sectionByKey = new Map<string, CourseSection>();
-  existingSections.forEach((s) => sectionByKey.set(sectionKey(s.level, s.core, s.title), s));
-
-  let nextOrder = existingSections.length
-    ? Math.max(...existingSections.map((s) => s.order)) + 1
-    : 0;
-
-  const summary: ImportSummary = { sectionsCreated: 0, videosCreated: 0, videosUpdated: 0 };
-  // Videos added during this import, so ordering continues correctly.
-  const addedTitles = new Map<string, Set<string>>();
-  const orderCursor = new Map<string, number>();
-
-  for (const row of rows) {
-    const key = sectionKey(row.level, row.core, row.unit);
-    let section = sectionByKey.get(key);
-
-    if (!section) {
-      const id = await createSection({
-        level: row.level,
-        core: row.core,
-        title: row.unit,
-        description: "",
-        order: nextOrder++,
-      });
-      section = { id, level: row.level, core: row.core, title: row.unit, description: "", order: nextOrder - 1 };
-      sectionByKey.set(key, section);
-      summary.sectionsCreated += 1;
-    }
-
-    const sectionVideos = existingVideos[section.id] ?? [];
-    if (!orderCursor.has(section.id)) {
-      orderCursor.set(section.id, sectionVideos.length ? Math.max(...sectionVideos.map((v) => v.order)) + 1 : 0);
-    }
-    if (!addedTitles.has(section.id)) addedTitles.set(section.id, new Set());
-
-    const embedUrl = extractEmbedSrc(row.videoLink);
-    const match = sectionVideos.find(
-      (v) => v.title.trim().toLowerCase() === row.title.trim().toLowerCase(),
-    );
-
-    if (match) {
-      await updateVideo(match.id, {
-        title: row.title,
-        description: row.description,
-        embedUrl,
-        requiredTools: row.requiredTools,
-      });
-      summary.videosUpdated += 1;
-    } else if (!addedTitles.get(section.id)!.has(row.title.trim().toLowerCase())) {
-      const order = orderCursor.get(section.id)!;
-      orderCursor.set(section.id, order + 1);
-      await createVideo({
-        sectionId: section.id,
-        order,
-        title: row.title,
-        description: row.description,
-        embedUrl,
-        requiredTools: row.requiredTools,
-        materials: [],
-        instructions: "",
-      });
-      addedTitles.get(section.id)!.add(row.title.trim().toLowerCase());
-      summary.videosCreated += 1;
-    }
-  }
-
-  return summary;
-}
-
-/** Writes sequential `order` values for a drag-and-drop reorder of sections. */
-export async function persistSectionOrder(ids: string[]): Promise<void> {
-  await Promise.all(
-    ids.map((id, index) =>
-      updateDoc(doc(db, "sections", id), { order: index, updatedAt: Date.now() }),
-    ),
-  );
-}
-
-/**
- * Writes sequential `order` values for videos after a drag-and-drop, and moves
- * a video to a new section when it was dropped into a different one.
- */
-export async function persistVideoOrder(
-  items: { id: string; sectionId: string }[],
-): Promise<void> {
-  await Promise.all(
-    items.map((item, index) =>
-      updateDoc(doc(db, "videos", item.id), {
-        order: index,
-        sectionId: item.sectionId,
-        updatedAt: Date.now(),
-      }),
-    ),
-  );
-}

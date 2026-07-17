@@ -130,7 +130,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   href="/admin/course"
                   className={`admin-submenu-link${pathname.startsWith("/admin/course") ? " active" : ""}`}
                 >
-                  Course
+                  Training Material
                 </Link>
               </div>
             </div>

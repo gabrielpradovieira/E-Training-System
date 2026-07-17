@@ -4,20 +4,23 @@ import "@/styles/training-admin.css";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { fetchSections, fetchVideosBySection } from "@/lib/data";
-import { COURSE_LEVELS, type CourseLevel, type CourseSection, type VideoDoc } from "@/lib/types";
+import { fetchCores, fetchSectionsByCore, fetchVideosBySection } from "@/lib/course-data";
+import {
+  COURSE_LEVELS,
+  type CoreCompetence,
+  type CourseLevel,
+  type CourseSection,
+  type VideoDoc,
+} from "@/lib/types";
+import { coreHeading } from "@/lib/course-format";
 
 const CERTIFICATE_PERCENT = 15;
-
-/** "Core Competence 1" when the value is a number, otherwise the label as-is. */
-function coreHeading(core: string): string {
-  return /^\d+$/.test(core.trim()) ? `Core Competence ${core.trim()}` : core.trim();
-}
 
 export default function TrainingPage() {
   const { isAdmin } = useAuth();
 
-  const [sections, setSections] = useState<CourseSection[]>([]);
+  const [cores, setCores] = useState<CoreCompetence[]>([]);
+  const [unitsByCore, setUnitsByCore] = useState<Record<string, CourseSection[]>>({});
   const [videosBySection, setVideosBySection] = useState<Record<string, VideoDoc[]>>({});
   const [activeLevel, setActiveLevel] = useState<CourseLevel>("foundation");
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
@@ -28,12 +31,17 @@ export default function TrainingPage() {
 
   const load = useCallback(async () => {
     try {
-      const [secs, vids] = await Promise.all([fetchSections(), fetchVideosBySection()]);
-      setSections(secs);
-      setVideosBySection(vids);
+      const [c, u, v] = await Promise.all([
+        fetchCores(),
+        fetchSectionsByCore(),
+        fetchVideosBySection(),
+      ]);
+      setCores(c);
+      setUnitsByCore(u);
+      setVideosBySection(v);
       setLoadError(null);
     } catch {
-      setLoadError("Couldn't load the course.");
+      setLoadError("Couldn't load the training material.");
     } finally {
       setLoading(false);
     }
@@ -44,23 +52,14 @@ export default function TrainingPage() {
     load();
   }, [load]);
 
-  // Sections in the active level, grouped by Core Competence (first-seen order).
-  const coreGroups = useMemo(() => {
-    const groups: { core: string; units: CourseSection[] }[] = [];
-    const byCore = new Map<string, CourseSection[]>();
-    sections
-      .filter((s) => s.level === activeLevel)
-      .forEach((s) => {
-        const key = s.core ?? "";
-        if (!byCore.has(key)) {
-          const units: CourseSection[] = [];
-          byCore.set(key, units);
-          groups.push({ core: key, units });
-        }
-        byCore.get(key)!.push(s);
-      });
-    return groups;
-  }, [sections, activeLevel]);
+  // Core Competences in the active level, each with its Competence Units.
+  const coreGroups = useMemo(
+    () =>
+      cores
+        .filter((c) => c.level === activeLevel)
+        .map((core) => ({ core, units: unitsByCore[core.id] ?? [] })),
+    [cores, unitsByCore, activeLevel],
+  );
 
   // Flat, ordered list within the active level (for prev/next).
   const flatVideos = useMemo(() => {
@@ -289,21 +288,20 @@ export default function TrainingPage() {
             <div className="accordion-container curriculum-cu-list">
               {loading ? (
                 <p className="vid-empty">Loading…</p>
-              ) : sections.length === 0 ? (
+              ) : cores.length === 0 ? (
                 <p className="vid-empty">
-                  The course hasn&apos;t been set up yet.{" "}
-                  {isAdmin && <Link href="/admin/course">Build it in Admin → Course.</Link>}
+                  The training material hasn&apos;t been set up yet.{" "}
+                  {isAdmin && <Link href="/admin/course">Build it in Admin → Training Material.</Link>}
                 </p>
               ) : coreGroups.length === 0 ? (
                 <p className="vid-empty">Nothing in this level yet.</p>
               ) : (
-                coreGroups.map((group) => (
-                  <div key={group.core || "ungrouped"}>
-                    {group.core && (
-                      <div className="curriculum-core-heading">
-                        <span>{coreHeading(group.core)}</span>
-                      </div>
-                    )}
+                coreGroups.map((group, gIndex) => (
+                  <div key={group.core.id}>
+                    <div className="curriculum-core-heading">
+                      <span>{coreHeading(group.core.title, gIndex)}</span>
+                      {group.core.description && <p>{group.core.description}</p>}
+                    </div>
                     {group.units.map((section, sIndex) => {
                       const videos = videosBySection[section.id] ?? [];
                       const isOpen = openSections.has(section.id);

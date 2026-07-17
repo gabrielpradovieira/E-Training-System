@@ -263,11 +263,91 @@
   transform: rotate(180deg);
 }
 
+/* ---- Level filter tabs on the builder ---- */
+.cb-level-tabs {
+  margin-bottom: 18px;
+}
+
+/* ---- Competence Unit (nested inside a Core Competence) ---- */
+.cb-unit {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-bg);
+  padding: 10px 12px;
+}
+
+.cb-unit.dragging {
+  opacity: 0.45;
+}
+
+.cb-videos {
+  margin-top: 10px;
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cb-badge-neutral {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card-inner);
+  border: 1px solid var(--line);
+  padding: 1px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* A chevron that sits at the start of a row rather than the far right. */
+.cb-chevron.flush {
+  margin-left: 0;
+  opacity: 0.7;
+}
+
+.cb-chevron.flush:hover {
+  opacity: 1;
+}
+
 /* ---- Expanded item body ---- */
 .cb-item-body {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+/* Inline editable fields (click the field, edit, then Save). */
+.cb-field {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.cb-field-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cb-field input,
+.cb-field textarea {
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card-inner);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.cb-field input:focus,
+.cb-field textarea:focus {
+  outline: none;
+  border-color: var(--blue);
 }
 
 .cb-meta {
