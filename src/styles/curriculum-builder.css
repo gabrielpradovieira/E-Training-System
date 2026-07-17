@@ -1,0 +1,444 @@
+/* =====================================================================
+   Curriculum builder (/admin/course)
+   Clean + minimal: thin borders, generous padding, hover-only row icons,
+   and the app's existing blue accent (var(--blue)).
+   ===================================================================== */
+
+.cb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---- Section card ---- */
+.cb-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-inner);
+  padding: 16px;
+}
+
+.cb-section.dragging {
+  opacity: 0.45;
+}
+
+.cb-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cb-section-label {
+  font-size: 0.9rem;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.cb-section-title {
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cb-objective {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 6px 0 0 4px;
+}
+
+.cb-section-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cb-core {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.cb-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--muted);
+}
+
+/* ---- Hover-only row tools ---- */
+.cb-row-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  flex-shrink: 0;
+}
+
+.cb-section-head:hover .cb-row-tools,
+.cb-item-head:hover .cb-row-tools,
+.cb-row-tools:focus-within {
+  opacity: 1;
+}
+
+.cb-icon-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.cb-icon-btn:hover {
+  background: rgba(38, 128, 194, 0.12);
+  color: var(--blue);
+}
+
+.cb-icon-btn.danger:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.cb-icon-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- Drag handle ---- */
+.cb-grip {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  flex-shrink: 0;
+}
+
+.cb-section-head:hover .cb-grip,
+.cb-item-head:hover .cb-grip,
+.cb-grip:focus-visible {
+  opacity: 1;
+}
+
+.cb-grip:active {
+  cursor: grabbing;
+}
+
+.cb-grip svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---- Item rows ---- */
+.cb-items {
+  margin-top: 12px;
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cb-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-bg);
+  padding: 10px 12px;
+}
+
+.cb-item.dragging {
+  opacity: 0.45;
+}
+
+.cb-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cb-status {
+  display: grid;
+  place-items: center;
+  color: var(--line);
+  flex-shrink: 0;
+}
+
+.cb-status.done {
+  color: #16a34a;
+}
+
+.cb-status svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cb-item-label {
+  font-size: 0.85rem;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.cb-item-title {
+  font-size: 0.85rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cb-badge {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #b45309;
+  background: rgba(234, 179, 8, 0.16);
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.cb-chevron {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* When a badge is present it already took the auto margin. */
+.cb-badge + .cb-chevron {
+  margin-left: 0;
+}
+
+.cb-chevron svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s ease;
+}
+
+.cb-chevron.open svg {
+  transform: rotate(180deg);
+}
+
+/* ---- Expanded item body ---- */
+.cb-item-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.cb-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cb-meta > div {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.cb-meta dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding-top: 1px;
+}
+
+.cb-meta dd {
+  font-size: 0.82rem;
+  color: var(--text);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.cb-meta dd.muted {
+  color: var(--muted);
+}
+
+/* ---- Forms ---- */
+.cb-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cb-form.inline {
+  gap: 8px;
+}
+
+.cb-new-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-inner);
+  padding: 16px;
+}
+
+.cb-form label {
+  display: block;
+  position: relative;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.cb-form input,
+.cb-form select {
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 60px 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.cb-form input:focus,
+.cb-form select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.cb-counter {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.cb-form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.cb-form-row select,
+.cb-form-row input {
+  margin-top: 0;
+  padding-right: 12px;
+}
+
+.cb-form-row select {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.cb-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---- Buttons ---- */
+.cb-btn-primary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--blue);
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.cb-btn-primary:hover {
+  filter: brightness(1.06);
+}
+
+.cb-btn-ghost {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.cb-add-item,
+.cb-add-section {
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--blue);
+  border-radius: 8px;
+  padding: 9px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.cb-add-item:hover,
+.cb-add-section:hover {
+  border-color: var(--blue);
+  background: rgba(38, 128, 194, 0.06);
+}
+
+.cb-add-section {
+  padding: 12px;
+}
+
+/* ---- Confirm modal ---- */
+.confirm-modal {
+  max-width: 400px;
+}
+
+.confirm-modal-text {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin: 8px 0 4px;
+  line-height: 1.5;
+}

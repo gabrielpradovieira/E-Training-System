@@ -324,17 +324,29 @@ export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportS
   return summary;
 }
 
+/** Writes sequential `order` values for a drag-and-drop reorder of sections. */
+export async function persistSectionOrder(ids: string[]): Promise<void> {
+  await Promise.all(
+    ids.map((id, index) =>
+      updateDoc(doc(db, "sections", id), { order: index, updatedAt: Date.now() }),
+    ),
+  );
+}
+
 /**
- * Swaps the `order` of two documents — the primitive behind the up/down
- * reorder arrows.
+ * Writes sequential `order` values for videos after a drag-and-drop, and moves
+ * a video to a new section when it was dropped into a different one.
  */
-export async function swapOrder(
-  collectionName: "sections" | "videos",
-  a: { id: string; order: number },
-  b: { id: string; order: number },
+export async function persistVideoOrder(
+  items: { id: string; sectionId: string }[],
 ): Promise<void> {
-  await Promise.all([
-    updateDoc(doc(db, collectionName, a.id), { order: b.order, updatedAt: Date.now() }),
-    updateDoc(doc(db, collectionName, b.id), { order: a.order, updatedAt: Date.now() }),
-  ]);
+  await Promise.all(
+    items.map((item, index) =>
+      updateDoc(doc(db, "videos", item.id), {
+        order: index,
+        sectionId: item.sectionId,
+        updatedAt: Date.now(),
+      }),
+    ),
+  );
 }
