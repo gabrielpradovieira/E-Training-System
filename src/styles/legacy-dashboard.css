@@ -4452,9 +4452,16 @@
     .pgtop-main {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 24px;
+      /* Not space-between: with three children that pushed the page identity
+         into the middle, leaving a large gap after the collapse toggle. Keep
+         toggle + identity together on the left and push the stats right. */
+      justify-content: flex-start;
+      gap: 12px;
       padding: 10px 0 14px;
+    }
+
+    .pgtop-stats {
+      margin-left: auto;
     }
 
     .sidebar-toggle {

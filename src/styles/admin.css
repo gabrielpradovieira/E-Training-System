@@ -1,17 +1,30 @@
-/* ---- Sidebar admin accordion ---- */
+/* ---- Sidebar admin accordion ----
+   Inherits .menu-link, so it must NOT set its own width: .menu-link already
+   has horizontal margins, and width:100% pushed the button past the sidebar
+   and forced a horizontal scrollbar. */
+/* A <button> shrink-wraps where the <a> menu links fill the row, so make the
+   section a flex column: children then stretch to the same width, without
+   hardcoding the .menu-link margins. */
+.menu-section.admin-section {
+  display: flex;
+  flex-direction: column;
+}
+
 .admin-accordion-btn {
-  width: 100%;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
   font: inherit;
+  line-height: inherit;
 }
 
 .admin-accordion-arrow {
   margin-left: auto;
   transition: transform 0.18s ease;
   opacity: 0.7;
+  /* Keep the glyph from adding height over the sibling menu links. */
+  line-height: 1;
 }
 
 .admin-accordion-btn.open .admin-accordion-arrow {
@@ -48,6 +61,19 @@
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-weight: 600;
+}
+
+/* Collapsed sidebar: the admin entry becomes an icon-only circle like every
+   other menu link, and the arrow + text sub-links are hidden so nothing
+   overflows or gets clipped. */
+.app-container.sidebar-collapsed .admin-accordion-arrow,
+.app-container.sidebar-collapsed .admin-submenu {
+  display: none;
+}
+
+/* Never let the nav produce a horizontal scrollbar. */
+.nav-sidebar {
+  overflow-x: hidden;
 }
 
 /* ---- Admin pages ----

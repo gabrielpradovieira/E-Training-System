@@ -81,6 +81,8 @@ export type CourseImportRow = {
   description: string;
   videoLink: string;
   requiredTools: string[];
+  /** Optional DURATION column, e.g. "12 min". */
+  duration: string;
 };
 
 export type ImportParseResult = {
@@ -156,6 +158,7 @@ export function mapCourseRows(table: string[][]): ImportParseResult {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
+      duration: cell(r, "DURATION"),
     });
   });
 

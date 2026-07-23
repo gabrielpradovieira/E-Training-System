@@ -86,6 +86,8 @@ export type VideoDoc = {
   order: number;
   title: string;
   description: string;
+  /** Free-text run time shown beside the title, e.g. "12 min" or "12:34". */
+  duration: string;
   /** OneDrive / SharePoint embed URL rendered in an iframe. */
   embedUrl: string;
   /** Per-video tool list, e.g. ["Maya", "ZBrush"]. */
@@ -103,6 +105,7 @@ export type VideoInput = {
   order: number;
   title: string;
   description: string;
+  duration: string;
   embedUrl: string;
   requiredTools: string[];
   materials: VideoMaterial[];

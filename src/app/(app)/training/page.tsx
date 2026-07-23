@@ -362,6 +362,9 @@ export default function TrainingPage() {
                                     >
                                       <span className="vid-number">{String(vIndex + 1).padStart(2, "0")}</span>
                                       <span className="lesson-label">{video.title}</span>
+                                      {video.duration && (
+                                        <span className="lesson-duration">{video.duration}</span>
+                                      )}
                                     </div>
                                   </div>
                                 );

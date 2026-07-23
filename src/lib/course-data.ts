@@ -125,6 +125,7 @@ export async function fetchVideosBySection(): Promise<Record<string, VideoDoc[]>
       order: data.order ?? 0,
       title: data.title ?? "Untitled",
       description: data.description ?? "",
+      duration: data.duration ?? "",
       embedUrl: data.embedUrl ?? "",
       requiredTools: Array.isArray(data.requiredTools) ? data.requiredTools : [],
       materials: Array.isArray(data.materials) ? data.materials : [],
@@ -281,6 +282,8 @@ export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportS
       await updateVideo(match.id, {
         title: row.title,
         description: row.description,
+        // Only overwrite an existing duration when the sheet supplies one.
+        ...(row.duration ? { duration: row.duration } : {}),
         embedUrl,
         requiredTools: row.requiredTools,
       });
@@ -293,6 +296,7 @@ export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportS
         order,
         title: row.title,
         description: row.description,
+        duration: row.duration,
         embedUrl,
         requiredTools: row.requiredTools,
         materials: [],

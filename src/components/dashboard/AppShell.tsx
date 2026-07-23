@@ -102,7 +102,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {isAdmin && (
-            <div className="menu-section">
+            <div className="menu-section admin-section">
               <div className="menu-label">Admin</div>
               <button
                 className={`menu-link admin-accordion-btn${adminOpen ? " open" : ""}${slug === "admin" ? " active" : ""}`}

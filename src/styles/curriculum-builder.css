@@ -73,6 +73,23 @@
   color: var(--muted);
 }
 
+/* Sidebar artwork reused here. The source SVGs are currentColor, which an
+   <img> renders black, so tint them to the accent blue (and to white in dark
+   mode, matching how the sidebar filters them). */
+.cb-asset-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(18%) sepia(40%) saturate(1427%)
+    hue-rotate(174deg) brightness(91%) contrast(94%);
+}
+
+body.dark-mode .cb-asset-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
+}
+
 /* ---- Hover-only row tools ---- */
 .cb-row-tools {
   display: flex;

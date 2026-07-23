@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import "@/styles/training-admin.css";
 import "@/styles/curriculum-builder.css";
@@ -39,11 +40,13 @@ const TITLE_MAX = 80;
 const OBJECTIVE_MAX = 200;
 
 /* ---------------- icons ---------------- */
-const DocIcon = () => (
-  <svg className="cb-icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-    <path d="M14 2v6h6" />
-  </svg>
+// Same artwork the sidebar uses for Competences / Documentation, tinted for
+// the light admin card (the source SVGs are currentColor).
+const CoreIcon = () => (
+  <img className="cb-asset-icon" src="/assets/icon-sidebar-competences.svg" alt="" aria-hidden="true" />
+);
+const UnitIcon = () => (
+  <img className="cb-asset-icon" src="/assets/icon-sidebar-documentation.svg" alt="" aria-hidden="true" />
 );
 const PlayIcon = () => (
   <svg className="cb-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -111,6 +114,7 @@ type DragState =
 type VideoDraft = {
   embedUrl: string;
   description: string;
+  duration: string;
   requiredTools: string;
   instructions: string;
   materials: VideoMaterial[];
@@ -259,6 +263,7 @@ export default function AdminTrainingMaterialPage() {
         order,
         title: "New video",
         description: "",
+        duration: "",
         embedUrl: "",
         requiredTools: [],
         materials: [],
@@ -283,6 +288,7 @@ export default function AdminTrainingMaterialPage() {
       videoDrafts[video.id] ?? {
         embedUrl: video.embedUrl,
         description: video.description,
+        duration: video.duration,
         requiredTools: video.requiredTools.join(", "),
         instructions: video.instructions,
         materials: video.materials,
@@ -301,6 +307,7 @@ export default function AdminTrainingMaterialPage() {
       await updateVideo(video.id, {
         embedUrl: extractEmbedSrc(draft.embedUrl),
         description: draft.description.trim(),
+        duration: draft.duration.trim(),
         requiredTools: draft.requiredTools
           .split(",")
           .map((t) => t.trim())
@@ -486,7 +493,7 @@ export default function AdminTrainingMaterialPage() {
                           <ChevronIcon />
                         </button>
                         <strong className="cb-section-label">{coreLabel(coreNumber.get(core.id))}:</strong>
-                        <DocIcon />
+                        <CoreIcon />
                         <span className="cb-section-title">{core.title || "Untitled"}</span>
                         <span className="cb-row-tools">
                           <button className="cb-icon-btn" type="button" aria-label="Edit core competence"
@@ -566,7 +573,7 @@ export default function AdminTrainingMaterialPage() {
                                       <ChevronIcon />
                                     </button>
                                     <strong className="cb-item-label">Unit {unitNumber.get(unit.id)}:</strong>
-                                    <DocIcon />
+                                    <UnitIcon />
                                     <span className="cb-item-title">{unit.title}</span>
                                     <span className="cb-row-tools">
                                       <button className="cb-icon-btn" type="button" aria-label="Edit unit"
@@ -669,6 +676,11 @@ export default function AdminTrainingMaterialPage() {
                                               Description
                                               <textarea rows={3} value={draft.description}
                                                 onChange={(e) => setDraft(video.id, { ...draft, description: e.target.value })} />
+                                            </label>
+                                            <label className="cb-field">
+                                              Duration <span className="vm-hint">(shown beside the title, e.g. 12 min)</span>
+                                              <input type="text" value={draft.duration} placeholder="12 min"
+                                                onChange={(e) => setDraft(video.id, { ...draft, duration: e.target.value })} />
                                             </label>
                                             <label className="cb-field">
                                               Required tools <span className="vm-hint">(comma separated)</span>
