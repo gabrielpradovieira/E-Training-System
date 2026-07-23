@@ -12,7 +12,7 @@ import {
   type CourseSection,
   type VideoDoc,
 } from "@/lib/types";
-import { coreHeading } from "@/lib/course-format";
+import { buildNumbering, coreLabel } from "@/lib/course-format";
 
 const CERTIFICATE_PERCENT = 15;
 
@@ -59,6 +59,12 @@ export default function TrainingPage() {
         .filter((c) => c.level === activeLevel)
         .map((core) => ({ core, units: unitsByCore[core.id] ?? [] })),
     [cores, unitsByCore, activeLevel],
+  );
+
+  // Numbering runs continuously across the whole course, not per level.
+  const { coreNumber, unitNumber } = useMemo(
+    () => buildNumbering(cores, unitsByCore),
+    [cores, unitsByCore],
   );
 
   // Flat, ordered list within the active level (for prev/next).
@@ -181,32 +187,36 @@ export default function TrainingPage() {
                 </div>
               </div>
 
-              {currentVideo && currentVideo.requiredTools.length > 0 && (
-                <div className="certificate-section">
-                  <div className="certificate-main">
-                    <div className="certificate-title">
-                      <svg className="certificate-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.2 2.2-3-3 2.2-2.2Z"></path>
-                        <path d="m14 14 5 5"></path>
-                      </svg>
-                      <span>Required tools</span>
-                    </div>
+              <div className="certificate-section">
+                <div className="certificate-main">
+                  <div className="certificate-title">
+                    <svg className="certificate-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.2 2.2-3-3 2.2-2.2Z"></path>
+                      <path d="m14 14 5 5"></path>
+                    </svg>
+                    <span>Required tools</span>
+                  </div>
+                  {currentVideo && currentVideo.requiredTools.length > 0 ? (
                     <ul className="resource-list">
                       {currentVideo.requiredTools.map((tool) => (
                         <li key={tool}>{tool}</li>
                       ))}
                     </ul>
-                    <p className="resource-helper-note">
-                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M12 16v-4"></path>
-                        <path d="M12 8h.01"></path>
-                      </svg>
-                      <span>Kindly request software and hardware access to your School IT Department.</span>
+                  ) : (
+                    <p className="certificate-note">
+                      {currentVideo ? "No tools listed for this lesson." : "Select a lesson to see its required tools."}
                     </p>
-                  </div>
+                  )}
+                  <p className="resource-helper-note">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M12 16v-4"></path>
+                      <path d="M12 8h.01"></path>
+                    </svg>
+                    <span>Kindly request software and hardware access to your School IT Department.</span>
+                  </p>
                 </div>
-              )}
+              </div>
 
               {currentVideo && currentVideo.instructions && (
                 <div className="certificate-section">
@@ -223,18 +233,18 @@ export default function TrainingPage() {
                 </div>
               )}
 
-              {currentVideo && currentVideo.materials.length > 0 && (
-                <div className="certificate-section">
-                  <div className="certificate-main">
-                    <div className="certificate-title">
-                      <svg className="certificate-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
-                        <path d="M14 2v6h6"></path>
-                        <path d="M12 18v-6"></path>
-                        <path d="m9 15 3 3 3-3"></path>
-                      </svg>
-                      <span>Media files</span>
-                    </div>
+              <div className="certificate-section">
+                <div className="certificate-main">
+                  <div className="certificate-title">
+                    <svg className="certificate-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
+                      <path d="M14 2v6h6"></path>
+                      <path d="M12 18v-6"></path>
+                      <path d="m9 15 3 3 3-3"></path>
+                    </svg>
+                    <span>Learning Material</span>
+                  </div>
+                  {currentVideo && currentVideo.materials.length > 0 ? (
                     <ul className="resource-file-list">
                       {currentVideo.materials.map((m, i) => (
                         <li key={i}>
@@ -253,9 +263,15 @@ export default function TrainingPage() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  ) : (
+                    <p className="certificate-note">
+                      {currentVideo
+                        ? "No learning material for this lesson."
+                        : "Select a lesson to see its learning material."}
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -296,13 +312,16 @@ export default function TrainingPage() {
               ) : coreGroups.length === 0 ? (
                 <p className="vid-empty">Nothing in this level yet.</p>
               ) : (
-                coreGroups.map((group, gIndex) => (
+                coreGroups.map((group) => (
                   <div key={group.core.id}>
                     <div className="curriculum-core-heading">
-                      <span>{coreHeading(group.core.title, gIndex)}</span>
+                      <span>
+                        {coreLabel(coreNumber.get(group.core.id))}
+                        {group.core.title ? ` — ${group.core.title}` : ""}
+                      </span>
                       {group.core.description && <p>{group.core.description}</p>}
                     </div>
-                    {group.units.map((section, sIndex) => {
+                    {group.units.map((section) => {
                       const videos = videosBySection[section.id] ?? [];
                       const isOpen = openSections.has(section.id);
                       return (
@@ -312,7 +331,7 @@ export default function TrainingPage() {
                             type="button"
                             onClick={() => toggleSection(section.id)}
                           >
-                            <span className="curriculum-cu-code">{String(sIndex + 1).padStart(2, "0")}</span>
+                            <span className="curriculum-cu-code">CU {unitNumber.get(section.id)}</span>
                             <span className="topic-copy">
                               <span className="topic-title">{section.title}</span>
                             </span>

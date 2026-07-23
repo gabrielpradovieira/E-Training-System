@@ -50,8 +50,12 @@
   font-weight: 600;
 }
 
-/* ---- Admin pages ---- */
+/* ---- Admin pages ----
+   Same content width as the Competences page (.comp-page) so the admin
+   screens don't stretch the full viewport. */
 .admin-page {
+  max-width: 900px;
+  margin: 0 auto;
   padding: 22px;
   display: flex;
   flex-direction: column;

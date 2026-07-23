@@ -4438,7 +4438,9 @@
       -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.35);
       box-shadow: 0 2px 16px rgba(13, 59, 102, 0.07);
-      padding: 0 28px;
+      /* Small left inset so the page icon + title sit against the sidebar
+         instead of floating in empty space. */
+      padding: 0 28px 0 10px;
     }
 
     body.dark-mode .pgtop {

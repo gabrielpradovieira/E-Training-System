@@ -33,7 +33,7 @@ import {
 import { extractEmbedSrc } from "@/lib/sharepoint";
 import CourseImport from "@/components/CourseImport";
 import ConfirmModal from "@/components/ConfirmModal";
-import { coreHeading } from "@/lib/course-format";
+import { buildNumbering, coreLabel } from "@/lib/course-format";
 
 const TITLE_MAX = 80;
 const OBJECTIVE_MAX = 200;
@@ -176,6 +176,10 @@ export default function AdminTrainingMaterialPage() {
   }
 
   const visibleCores = cores.filter((c) => c.level === activeLevel);
+
+  // Numbering runs continuously across the whole course, not per level, so
+  // Foundation ending at unit 5 means Intermediate starts at 6.
+  const { coreNumber, unitNumber } = buildNumbering(cores, unitsByCore);
 
   function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) {
     setter((prev) => {
@@ -430,7 +434,7 @@ export default function AdminTrainingMaterialPage() {
                 </p>
               )}
 
-              {visibleCores.map((core, cIndex) => {
+              {visibleCores.map((core) => {
                 const units = unitsByCore[core.id] ?? [];
                 const coreOpen = openCores.has(core.id);
                 const editingCore = form.kind === "edit-core" && form.id === core.id;
@@ -481,9 +485,9 @@ export default function AdminTrainingMaterialPage() {
                         >
                           <ChevronIcon />
                         </button>
-                        <strong className="cb-section-label">{coreHeading(core.title, cIndex)}:</strong>
+                        <strong className="cb-section-label">{coreLabel(coreNumber.get(core.id))}:</strong>
                         <DocIcon />
-                        <span className="cb-section-title">{core.description || "—"}</span>
+                        <span className="cb-section-title">{core.title || "Untitled"}</span>
                         <span className="cb-row-tools">
                           <button className="cb-icon-btn" type="button" aria-label="Edit core competence"
                             onClick={() => { setCoreDraft({ title: core.title, description: core.description }); setForm({ kind: "edit-core", id: core.id }); }}>
@@ -505,13 +509,17 @@ export default function AdminTrainingMaterialPage() {
                       </div>
                     )}
 
+                    {!editingCore && core.description && (
+                      <p className="cb-objective">{core.description}</p>
+                    )}
+
                     {coreOpen && !editingCore && (
                       <div
                         className="cb-items"
                         onDragOver={(e) => { if (drag?.kind === "unit") e.preventDefault(); }}
                         onDrop={(e) => { if (drag?.kind === "unit") { e.preventDefault(); dropUnit(core.id, null); } }}
                       >
-                        {units.map((unit, uIndex) => {
+                        {units.map((unit) => {
                           const videos = videosBySection[unit.id] ?? [];
                           const unitOpen = openUnits.has(unit.id);
                           const editingUnit = form.kind === "edit-unit" && form.id === unit.id;
@@ -557,7 +565,7 @@ export default function AdminTrainingMaterialPage() {
                                     >
                                       <ChevronIcon />
                                     </button>
-                                    <strong className="cb-item-label">Unit {uIndex + 1}:</strong>
+                                    <strong className="cb-item-label">Unit {unitNumber.get(unit.id)}:</strong>
                                     <DocIcon />
                                     <span className="cb-item-title">{unit.title}</span>
                                     <span className="cb-row-tools">
