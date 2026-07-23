@@ -13,6 +13,14 @@ next-env.d.ts
 serviceAccountKey.json
 *-service-account*.json
 
+# ---- Local scratch / private course data (never commit — public repo) ----
+# test.js held a live Microsoft Graph access token; videos.csv is the raw
+# SharePoint export; course-import.csv is the generated importer file. All
+# contain internal org data/credentials.
+test.js
+videos.csv
+course-import.csv
+
 # ---- Vercel ----
 .vercel
 
