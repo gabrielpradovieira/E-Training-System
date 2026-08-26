@@ -11,15 +11,16 @@ Tailwind v4) and **Firebase** (Auth + Firestore), deployed on **Vercel**.
   level tabs, accordions, lesson tracking, and the competence framework).
 - **Firebase auth** — email/password + Google sign-in.
 - **Pre-approved registration** — only emails an admin has approved can create a
-  usable account. Enforced by Firestore security rules (client-only, no server
-  secrets); unapproved accounts are removed at registration and can access
-  nothing.
+  usable account. Enforced by Firestore security rules; unapproved accounts are
+  removed at registration and can access nothing.
 - **Admin panel** — gated by the admin email defined only in `firestore.rules`
   (the client detects admin by capability, so the email never ships to the
   browser): manage the approved-email allowlist, view all users and their
   progress, and a summary overview.
-- **SharePoint media** — paste share links; they're converted to direct,
-  embeddable URLs.
+- **Training videos via SharePoint/OneDrive** — admins paste a share link;
+  the server resolves it to a playable URL via an app-only Microsoft Graph
+  credential (see [SETUP.md](SETUP.md)), since SharePoint's own viewer can't
+  be embedded for a signed-out visitor.
 
 ## Quick start
 
@@ -36,9 +37,11 @@ bootstrap, and Vercel deployment — are in **[SETUP.md](SETUP.md)**.
 
 Access control is enforced by [`firestore.rules`](firestore.rules) — a user can
 read/write only their own profile, and only if their email is on the
-admin-managed allowlist (or is the admin). There are no server secrets: the app
-is client-only and all configuration comes from public `NEXT_PUBLIC_*` env vars
-(`.env` is gitignored; `sample.env` is the committed template).
+admin-managed allowlist (or is the admin). Almost all configuration is public
+`NEXT_PUBLIC_*` identifiers (`.env` is gitignored; `sample.env` is the
+committed template). The one real secret is `MICROSOFT_CLIENT_SECRET`, used
+only by the single server route that resolves training-video links — it never
+reaches the browser.
 
 ## Legacy
 

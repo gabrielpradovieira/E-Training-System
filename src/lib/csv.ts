@@ -77,11 +77,13 @@ export type CourseImportRow = {
   level: CourseLevel;
   core: string;
   unit: string;
+  /** The Competence Unit's running number (1..N), used to order units within their core. */
+  unitNumber: number;
   title: string;
   description: string;
   videoLink: string;
   requiredTools: string[];
-  /** Optional DURATION column, e.g. "12 min". */
+  /** Optional DURATION column, e.g. "12 min" — not part of the standard sheet. */
   duration: string;
 };
 
@@ -102,12 +104,21 @@ export function normalizeLevel(value: string): CourseLevel | null {
   return null;
 }
 
-const REQUIRED_HEADERS = ["LEVEL", "CORE COMPETENCE", "COMPETENCE UNIT", "TITLE"];
+const REQUIRED_HEADERS = [
+  "LEVEL",
+  "CORE COMPETENCE",
+  "COMPETENCE UNIT",
+  "COMPETENCE UNIT NUMBER",
+  "VIDEO TITLE",
+];
+
+const ALL_HEADERS = [...REQUIRED_HEADERS, "REQUIRED TOOLS", "QUICK DESCRIPTION", "EMBED CODE"];
 
 /**
  * Maps parsed CSV cells onto course rows using the header names:
- * LEVEL, CORE COMPETENCE, COMPETENCE UNIT, TITLE, DESCRIPTION, VIDEO LINK,
- * REQUIRED TOOLS. Extra columns are ignored; column order doesn't matter.
+ * Level, Core Competence, Competence Unit, Competence Unit Number, Video
+ * Title, Required tools, Quick Description, Embed Code. Extra columns are
+ * ignored; column order doesn't matter.
  */
 export function mapCourseRows(table: string[][]): ImportParseResult {
   const errors: string[] = [];
@@ -118,7 +129,7 @@ export function mapCourseRows(table: string[][]): ImportParseResult {
   if (missing.length) {
     return {
       rows: [],
-      errors: [`Missing column(s): ${missing.join(", ")}. Expected header row: ${REQUIRED_HEADERS.join(", ")}, DESCRIPTION, VIDEO LINK, REQUIRED TOOLS.`],
+      errors: [`Missing column(s): ${missing.join(", ")}. Expected header row: ${ALL_HEADERS.join(", ")}.`],
     };
   }
 
@@ -132,7 +143,9 @@ export function mapCourseRows(table: string[][]): ImportParseResult {
     const rawLevel = cell(r, "LEVEL");
     const level = normalizeLevel(rawLevel);
     const unit = cell(r, "COMPETENCE UNIT");
-    const title = cell(r, "TITLE");
+    const rawUnitNumber = cell(r, "COMPETENCE UNIT NUMBER");
+    const unitNumber = Number(rawUnitNumber);
+    const title = cell(r, "VIDEO TITLE");
 
     if (!level) {
       errors.push(`Row ${lineNo}: unknown LEVEL "${rawLevel}" (use Foundation, Intermediate or Advanced).`);
@@ -142,8 +155,12 @@ export function mapCourseRows(table: string[][]): ImportParseResult {
       errors.push(`Row ${lineNo}: COMPETENCE UNIT is empty.`);
       return;
     }
+    if (!rawUnitNumber || !Number.isFinite(unitNumber) || unitNumber <= 0) {
+      errors.push(`Row ${lineNo}: COMPETENCE UNIT NUMBER "${rawUnitNumber}" is not a valid positive number.`);
+      return;
+    }
     if (!title) {
-      errors.push(`Row ${lineNo}: TITLE is empty.`);
+      errors.push(`Row ${lineNo}: VIDEO TITLE is empty.`);
       return;
     }
 
@@ -151,9 +168,10 @@ export function mapCourseRows(table: string[][]): ImportParseResult {
       level,
       core: cell(r, "CORE COMPETENCE"),
       unit,
+      unitNumber,
       title,
-      description: cell(r, "DESCRIPTION"),
-      videoLink: cell(r, "VIDEO LINK"),
+      description: cell(r, "QUICK DESCRIPTION"),
+      videoLink: cell(r, "EMBED CODE"),
       requiredTools: cell(r, "REQUIRED TOOLS")
         .split(",")
         .map((t) => t.trim())

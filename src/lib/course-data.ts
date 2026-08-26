@@ -193,6 +193,22 @@ export async function persistVideoOrder(items: { id: string; sectionId: string }
   );
 }
 
+/* ---------------- Danger zone ---------------- */
+
+/** Wipes every core, unit, and video — the entire training material. Irreversible. */
+export async function deleteAllCourseData(): Promise<void> {
+  const [coreSnap, sectionSnap, videoSnap] = await Promise.all([
+    getDocs(collection(db, "cores")),
+    getDocs(collection(db, "sections")),
+    getDocs(collection(db, "videos")),
+  ]);
+  await Promise.all([
+    ...videoSnap.docs.map((d) => deleteDoc(d.ref)),
+    ...sectionSnap.docs.map((d) => deleteDoc(d.ref)),
+    ...coreSnap.docs.map((d) => deleteDoc(d.ref)),
+  ]);
+}
+
 /* ---------------- Spreadsheet import ---------------- */
 
 export type ImportSummary = {
@@ -226,7 +242,6 @@ export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportS
   );
 
   let nextCoreOrder = cores.length ? Math.max(...cores.map((c) => c.order)) + 1 : 0;
-  const unitOrder = new Map<string, number>();
   const videoOrder = new Map<string, number>();
   const seenVideo = new Map<string, Set<string>>();
   const summary: ImportSummary = {
@@ -250,15 +265,13 @@ export async function importCourseRows(rows: CourseImportRow[]): Promise<ImportS
     }
 
     // --- Competence Unit ---
+    // New units are ordered by their sheet-supplied Competence Unit Number
+    // (the curriculum's continuous 1..33 numbering) rather than row order, so
+    // a reshuffled sheet still produces correctly ordered units.
     const uKey = `${core.id}||${norm(row.unit)}`;
     let unit = unitByKey.get(uKey);
     if (!unit) {
-      if (!unitOrder.has(core.id)) {
-        const existing = unitsByCore[core.id] ?? [];
-        unitOrder.set(core.id, existing.length ? Math.max(...existing.map((u) => u.order)) + 1 : 0);
-      }
-      const order = unitOrder.get(core.id)!;
-      unitOrder.set(core.id, order + 1);
+      const order = row.unitNumber;
       const id = await createSection({ coreId: core.id, title: row.unit, description: "", order });
       unit = { id, coreId: core.id, title: row.unit, description: "", order };
       unitByKey.set(uKey, unit);

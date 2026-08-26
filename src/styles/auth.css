@@ -95,7 +95,7 @@
   cursor: not-allowed;
 }
 
-.auth-google {
+.auth-oauth-btn {
   width: 100%;
   padding: 11px;
   border-radius: 10px;
@@ -111,7 +111,11 @@
   gap: 10px;
 }
 
-.auth-google:disabled {
+.auth-oauth-btn + .auth-oauth-btn {
+  margin-top: 10px;
+}
+
+.auth-oauth-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -177,4 +181,273 @@
   background: #0d1b2a;
   color: #9fb3c8;
   font-size: 0.9rem;
+}
+
+/* ---------------------------------------------------------------------
+   Login page — split screen: photo panel + white form panel.
+   Uses position:fixed to fill the viewport regardless of the shared
+   .auth-shell wrapper's centering/padding (register keeps the old look).
+   --------------------------------------------------------------------- */
+
+.login-split {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  background: #fff;
+}
+
+.login-visual {
+  position: relative;
+  flex: 1 1 50%;
+  overflow: hidden;
+  background: #0d1b2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-visual::before {
+  content: "";
+  position: absolute;
+  inset: -20px;
+  background-image: url("/assets/login-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: blur(10px);
+  transform: scale(1.1);
+}
+
+.login-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(13, 27, 42, 0.55), rgba(13, 27, 42, 0.75));
+}
+
+.login-visual-copy {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  text-align: center;
+  padding: 0 32px;
+}
+
+.login-visual-eyebrow {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+}
+
+.login-visual-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.login-panel {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.login-panel-inner {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a2b3c;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.login-panel-inner .auth-error {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
+}
+
+.login-panel-inner .auth-success {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #15803d;
+}
+
+.login-field {
+  margin-bottom: 18px;
+}
+
+.login-field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.login-required {
+  color: #dc2626;
+}
+
+.login-field input {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-field input:focus {
+  border-color: #2680c2;
+  box-shadow: 0 0 0 3px rgba(38, 128, 194, 0.15);
+}
+
+.login-password-wrap {
+  position: relative;
+}
+
+.login-password-wrap input {
+  padding-right: 42px;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.login-password-toggle:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #1a2b3c;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #0d3b66;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+
+.login-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.login-oauth-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login-oauth-btn + .login-oauth-btn {
+  margin-top: 10px;
+}
+
+.login-oauth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-footer {
+  margin-top: 20px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.login-footer a {
+  color: #2680c2;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .login-split {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .login-visual {
+    flex: 0 0 180px;
+  }
+
+  .login-visual-title {
+    font-size: 1.4rem;
+  }
+
+  .login-panel {
+    flex: 1 1 auto;
+    align-items: flex-start;
+    padding: 32px 24px;
+  }
 }

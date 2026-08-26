@@ -80,6 +80,47 @@ export default function TrainingPage() {
   const currentVideo = currentIndex >= 0 ? flatVideos[currentIndex] : null;
   const totalVideos = flatVideos.length;
 
+  // Resolve the current video's SharePoint share link to a direct, playable
+  // URL via the server (Graph app-only credential) — SharePoint's own
+  // viewer can't be iframed for a signed-out visitor, so we play a real
+  // <video> element instead. Re-resolves whenever the selected video changes.
+  const [resolvedVideoUrl, setResolvedVideoUrl] = useState<string | null>(null);
+  const [resolvingVideo, setResolvingVideo] = useState(false);
+  const [videoResolveError, setVideoResolveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Reset whenever the selected video changes, before (re)resolving it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResolvedVideoUrl(null);
+    setVideoResolveError(null);
+    if (!currentVideo?.embedUrl) {
+      setResolvingVideo(false);
+      return;
+    }
+    let cancelled = false;
+    setResolvingVideo(true);
+    fetch("/api/resolve-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shareUrl: currentVideo.embedUrl }),
+    })
+      .then(async (res) => {
+        const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+        if (cancelled) return;
+        if (!res.ok || !data.url) throw new Error(data.error ?? "Couldn't load this video.");
+        setResolvedVideoUrl(data.url);
+      })
+      .catch((err) => {
+        if (!cancelled) setVideoResolveError(err instanceof Error ? err.message : "Couldn't load this video.");
+      })
+      .finally(() => {
+        if (!cancelled) setResolvingVideo(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentVideo?.id, currentVideo?.embedUrl]);
+
   function toggleSection(id: string) {
     setOpenSections((prev) => {
       const next = new Set(prev);
@@ -115,17 +156,34 @@ export default function TrainingPage() {
           <div className="video-section">
             <div className="video-player glass">
               <div className="video-container">
-                {currentVideo?.embedUrl ? (
-                  <iframe
+                {currentVideo?.embedUrl && resolvedVideoUrl ? (
+                  <video
+                    key={currentVideo.id}
                     className="video-embed-frame"
-                    src={currentVideo.embedUrl}
+                    src={resolvedVideoUrl}
+                    controls
+                    autoPlay
                     title={currentVideo.title}
-                    allow="autoplay; encrypted-media; fullscreen"
-                    allowFullScreen
                   />
+                ) : currentVideo?.embedUrl && resolvingVideo ? (
+                  <div className="video-placeholder">
+                    <p>Loading video…</p>
+                  </div>
+                ) : currentVideo?.embedUrl && videoResolveError ? (
+                  <div className="video-placeholder">
+                    <p>{videoResolveError}</p>
+                  </div>
                 ) : (
                   <div className="video-placeholder">
-                    <div className="play-icon">&#9658;</div>
+                    <div className="play-icon">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+                        <path
+                          d="M10 8.64c0-.531.573-.867 1.036-.607l5.892 3.36a.7.7 0 0 1 0 1.214l-5.892 3.36A.7.7 0 0 1 10 15.36V8.64Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </div>
                     <p>{currentVideo ? "No video link set for this lesson yet." : "Select a lesson to start learning"}</p>
                   </div>
                 )}
@@ -331,7 +389,7 @@ export default function TrainingPage() {
                             type="button"
                             onClick={() => toggleSection(section.id)}
                           >
-                            <span className="curriculum-cu-code">CU {unitNumber.get(section.id)}</span>
+                            <span className="curriculum-cu-code">{unitNumber.get(section.id)}.</span>
                             <span className="topic-copy">
                               <span className="topic-title">{section.title}</span>
                             </span>
@@ -361,6 +419,20 @@ export default function TrainingPage() {
                                       }}
                                     >
                                       <span className="vid-number">{String(vIndex + 1).padStart(2, "0")}</span>
+                                      <svg
+                                        className="lesson-video-icon"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        aria-hidden="true"
+                                      >
+                                        <rect x="2" y="6" width="14" height="12" rx="2" />
+                                        <path d="M22 8l-6 4 6 4V8Z" />
+                                      </svg>
                                       <span className="lesson-label">{video.title}</span>
                                       {video.duration && (
                                         <span className="lesson-duration">{video.duration}</span>

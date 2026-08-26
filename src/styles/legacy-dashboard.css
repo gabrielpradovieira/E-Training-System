@@ -18,26 +18,7 @@
       --card-inner: #f9fafb;
     }
 
-    body.dark-mode {
-      --bg-1: #111827;
-      --bg-2: #1f2937;
-      --nav-1: #0d3b66;
-      --nav-2: #1e5a8e;
-      --nav-3: #2680c2;
-      --text: #f9fafb;
-      --muted: #d1d5db;
-      --line: #374151;
-      --panel: #1f2937;
-      --panel-strong: #1f2937;
-      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-      --blue: #4a9fd8;
-      --blue-2: #60a5fa;
-      --progress-track: #374151;
-      --card-bg: #1f2937;
-      --card-inner: #111827;
-    }
-
-    * { 
+    * {
       box-sizing: border-box; 
       margin: 0;
       padding: 0;
@@ -53,10 +34,6 @@
       -webkit-font-smoothing: antialiased;
       margin: 0;
       padding: 0;
-    }
-
-    body.dark-mode {
-      background: var(--bg-1);
     }
 
     .app-container {
@@ -75,20 +52,6 @@
       flex-shrink: 0;
       box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
       transition: width 0.22s ease;
-    }
-
-    .sidebar-brand {
-      padding: 18px 16px 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      justify-content: center;
-    }
-
-    .brand-logo {
-      display: block;
-      width: 150px;
-      max-width: 100%;
-      height: auto;
     }
 
     .sidebar-menu {
@@ -152,7 +115,7 @@
     }
 
     .sidebar-skill-title {
-      padding: 8px 20px 12px;
+      padding: 20px 20px 12px;
       font-size: 0.72rem;
       font-weight: 700;
       color: rgba(255, 255, 255, 0.75);
@@ -195,6 +158,7 @@
       display: flex;
       gap: 8px;
       justify-content: center;
+      background: transparent;
     }
 
     /* Main Content Wrapper */
@@ -208,14 +172,6 @@
 
     .app-container.sidebar-collapsed .nav-sidebar {
       width: 76px;
-    }
-
-    .app-container.sidebar-collapsed .brand-logo {
-      width: 42px;
-    }
-
-    .app-container.sidebar-collapsed .sidebar-brand {
-      padding-inline: 12px;
     }
 
     .app-container.sidebar-collapsed .sidebar-skill-title,
@@ -265,8 +221,9 @@
       padding: 32px;
     }
 
-    /* Profile and Theme Buttons */
-    .profile-btn, .theme-toggle {
+    /* Profile and Logout Buttons — solid dark blue circles on the sidebar,
+       not a translucent overlay, so they read clearly against --nav-1. */
+    .profile-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -274,8 +231,8 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: var(--nav-2);
       color: white;
       font: inherit;
       cursor: pointer;
@@ -285,55 +242,21 @@
     }
 
     .profile-btn:hover {
-      background: rgba(255,255,255,0.18);
+      background: var(--nav-3);
       transform: scale(1.05);
     }
 
-    .profile-icon,
-    .theme-toggle-icon {
+    .profile-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
     }
 
-    .profile-icon svg,
-    .theme-toggle-icon svg {
+    .profile-icon svg {
       width: 20px;
       height: 20px;
       stroke: currentColor;
-    }
-
-    .theme-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      padding: 10px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.12);
-      color: white;
-      font: inherit;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.2s, transform 0.2s;
-      font-size: 1.3rem;
-    }
-
-    .theme-toggle:hover {
-      background: rgba(255,255,255,0.18);
-      transform: scale(1.05);
-    }
-
-    body.dark-mode .theme-toggle .sun-icon {
-      display: none;
-    }
-
-    body:not(.dark-mode) .theme-toggle .moon-icon {
-      display: none;
     }
 
     /* Section Visibility */
@@ -904,20 +827,22 @@
     .play-icon {
       width: 80px;
       height: 80px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
       margin: 0 auto 16px;
-      backdrop-filter: blur(10px);
+      color: rgba(255, 255, 255, 0.85);
       transition: all 0.3s ease;
       cursor: pointer;
     }
 
+    .play-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
     .play-icon:hover {
-      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
       transform: scale(1.05);
     }
 
@@ -2828,10 +2753,6 @@
       overflow: hidden;
     }
 
-    body.dark-mode .showcase-stage {
-      background: rgba(18, 27, 43, 0.55);
-    }
-
     .stage-media {
       width: 100%;
       height: 100%;
@@ -3022,14 +2943,6 @@
       background: rgba(9, 17, 33, 0.5);
     }
 
-    body.dark-mode .showcase-next {
-      background: rgba(255,255,255,0.08);
-    }
-
-    body.dark-mode .showcase-next:hover {
-      background: rgba(255,255,255,0.14);
-    }
-
     @keyframes growBar {
       from { width: 0; }
       to { width: var(--target-width, 100%); }
@@ -3131,7 +3044,7 @@
         padding: 16px;
       }
 
-      .profile-btn, .theme-toggle {
+      .profile-btn {
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
@@ -3758,7 +3671,6 @@
       .play-icon {
         width: 54px;
         height: 54px;
-        font-size: 1.4rem;
         margin-bottom: 10px;
       }
 
@@ -3865,27 +3777,6 @@
       border-radius: 8px;
     }
 
-    #dashboard .roadmap-svg-image.dark-roadmap {
-      display: none;
-    }
-
-    body.dark-mode #dashboard .db-roadmap {
-      background: var(--bg-1);
-      border-color: transparent;
-      box-shadow: none;
-    }
-
-    body.dark-mode #dashboard .roadmap-svg-image.light-roadmap {
-      display: none;
-    }
-
-    body.dark-mode #dashboard .roadmap-svg-image.dark-roadmap {
-      display: block;
-      background: var(--bg-1);
-      border-color: transparent;
-      box-shadow: none;
-    }
-
     #dashboard .roadmap-stage-labels {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3937,12 +3828,6 @@
       flex: 0 0 auto;
       color: currentColor;
     }
-    body.dark-mode #dashboard .roadmap-stage-labels { color: #f8fafc; }
-    body.dark-mode #dashboard .roadmap-stage-title { color: #f8fafc; }
-    body.dark-mode #dashboard .roadmap-stage-number,
-    body.dark-mode #dashboard .roadmap-stage-date,
-    body.dark-mode #dashboard .roadmap-stage-hours { color: rgba(248, 250, 252, 0.62); }
-
     @media (max-width: 980px) {
       #dashboard .roadmap-stage-labels {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4443,12 +4328,6 @@
       padding: 0 28px 0 10px;
     }
 
-    body.dark-mode .pgtop {
-      background: rgba(31, 41, 55, 0.6);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
-    }
-
     .pgtop-main {
       display: flex;
       align-items: center;
@@ -4492,11 +4371,6 @@
 
     .app-container.sidebar-collapsed .sidebar-toggle svg {
       transform: rotate(180deg);
-    }
-
-    body.dark-mode .sidebar-toggle {
-      color: #ffffff;
-      border-right-color: rgba(255, 255, 255, 0.08);
     }
 
     .pgtop-identity {
@@ -4613,9 +4487,7 @@
       filter: brightness(0) saturate(100%) invert(18%) sepia(40%) saturate(1427%) hue-rotate(174deg) brightness(91%) contrast(94%);
     }
 
-    body.dark-mode .pgtop-stat-icon {
-      filter: brightness(0) invert(1);
-    }.pgtop-divider {
+    .pgtop-divider {
       width: 1px;
       height: 36px;
       background: var(--line);

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,7 +43,6 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-card">
-      <img className="auth-logo" src="/assets/actvet_emiratesskills_logo_white.svg" alt="ACTVET EmiratesSkills" />
       <h1 className="auth-title">Create your account</h1>
       <p className="auth-subtitle">Only pre-approved emails can register</p>
 

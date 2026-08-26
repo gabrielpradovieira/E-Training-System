@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,9 +16,39 @@ function GoogleIcon() {
   );
 }
 
+function MicrosoftIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+    </svg>
+  );
+}
+
+function EyeIcon({ off }: { off: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+      <circle cx="12" cy="12" r="3" />
+      {off && <path d="M2 2l20 20" />}
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="auth-card">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="login-split">
+          <div className="login-visual" />
+          <div className="login-panel">
+            <div className="login-panel-inner">Loading…</div>
+          </div>
+        </div>
+      }
+    >
       <LoginInner />
     </Suspense>
   );
@@ -31,10 +60,11 @@ function LoginInner() {
   const nextPath = searchParams.get("next") || "/dashboard";
   const registered = searchParams.get("registered") === "1";
   const notApproved = searchParams.get("error") === "not-approved";
-  const { user, loading, signInEmail, signInGoogle } = useAuth();
+  const { user, loading, signInEmail, signInGoogle, signInMicrosoft } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(
     notApproved ? "Your email is not approved to use the system yet. Contact your administrator." : null,
   );
@@ -75,56 +105,99 @@ function LoginInner() {
     }
   }
 
+  async function handleMicrosoft() {
+    setError(null);
+    setBusy(true);
+    try {
+      await signInMicrosoft();
+      router.replace(nextPath);
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="auth-card">
-      <img className="auth-logo" src="/assets/actvet_emiratesskills_logo_white.svg" alt="ACTVET EmiratesSkills" />
-      <h1 className="auth-title">E-Training System</h1>
-      <p className="auth-subtitle">Sign in to continue</p>
-
-      {registered && <div className="auth-success">Account created. You can sign in now.</div>}
-      {error && <div className="auth-error">{error}</div>}
-
-      <form onSubmit={handleEmailSubmit}>
-        <div className="auth-field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+    <div className="login-split">
+      <div className="login-visual">
+        <div className="login-visual-copy">
+          <span className="login-visual-eyebrow">E-Training</span>
+          <h2 className="login-visual-title">3D Digital Game Art</h2>
         </div>
-        <div className="auth-field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+      </div>
+
+      <div className="login-panel">
+        <div className="login-panel-inner">
+          <h1 className="login-heading">Login</h1>
+
+          {registered && <div className="auth-success">Account created. You can sign in now.</div>}
+          {error && <div className="auth-error">{error}</div>}
+
+          <form onSubmit={handleEmailSubmit}>
+            <div className="login-field">
+              <label htmlFor="email">
+                Email <span className="login-required">*</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="login-field">
+              <label htmlFor="password">
+                Password <span className="login-required">*</span>
+              </label>
+              <div className="login-password-wrap">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="login-password-toggle"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <EyeIcon off={showPassword} />
+                </button>
+              </div>
+            </div>
+            <button className="login-btn" type="submit" disabled={busy}>
+              {busy ? "Signing in…" : "Log in"}
+            </button>
+          </form>
+
+          <div className="login-divider">or</div>
+
+          <button className="login-oauth-btn" type="button" onClick={handleGoogle} disabled={busy}>
+            <GoogleIcon />
+            Continue with Google
+          </button>
+
+          <button className="login-oauth-btn" type="button" onClick={handleMicrosoft} disabled={busy}>
+            <MicrosoftIcon />
+            Continue with Microsoft
+          </button>
+
+          <p className="login-footer">
+            If you are not registered yet you will need to contact your Organization to arrange
+            access, or{" "}
+            <Link href={`/register${nextPath !== "/dashboard" ? `?next=${encodeURIComponent(nextPath)}` : ""}`}>
+              create your account
+            </Link>{" "}
+            if already approved.
+          </p>
         </div>
-        <button className="auth-btn" type="submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
-
-      <div className="auth-divider">or</div>
-
-      <button className="auth-google" type="button" onClick={handleGoogle} disabled={busy}>
-        <GoogleIcon />
-        Continue with Google
-      </button>
-
-      <p className="auth-footer">
-        Approved by your trainer?{" "}
-        <Link href={`/register${nextPath !== "/dashboard" ? `?next=${encodeURIComponent(nextPath)}` : ""}`}>
-          Create your account
-        </Link>
-      </p>
+      </div>
     </div>
   );
 }
@@ -140,6 +213,8 @@ function friendlyError(err: unknown): string {
       return "Too many attempts. Please try again later.";
     case "auth/popup-closed-by-user":
       return "Sign-in was cancelled.";
+    case "auth/operation-not-allowed":
+      return "This sign-in method isn't enabled yet. Contact your administrator.";
     default:
       return err instanceof Error ? err.message : "Sign-in failed. Please try again.";
   }

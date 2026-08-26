@@ -8,7 +8,6 @@ import { metaForPath, navItems, pageMeta } from "@/lib/pageMeta";
 import { useAuth } from "@/lib/auth-context";
 
 const EVENT_TARGET = new Date("2026-10-24T00:00:00+04:00");
-const THEME_STORAGE_KEY = "tv-dashboard-theme";
 
 function currentSlug(pathname: string): string {
   const slug = pathname.split("/").filter(Boolean)[0];
@@ -30,21 +29,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const [collapsed, setCollapsed] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [countdown, setCountdown] = useState("-- days left");
   // Keep the admin accordion open while on an admin page.
   const [adminOpen, setAdminOpen] = useState(slug === "admin");
-
-  useEffect(() => {
-    // Hydrate the persisted theme on mount (localStorage is client-only).
-    const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (saved === "dark") setIsDark(true);
-  }, []);
-
-  useEffect(() => {
-    document.body.classList.toggle("dark-mode", isDark);
-  }, [isDark]);
 
   useEffect(() => {
     const update = () => {
@@ -57,25 +44,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
-  function toggleTheme() {
-    setIsDark((prev) => {
-      const next = !prev;
-      window.localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
-      return next;
-    });
-  }
-
   return (
     <div className={`app-container${collapsed ? " sidebar-collapsed" : ""}`}>
       <aside className="nav-sidebar">
-        <div className="sidebar-brand">
-          <img
-            className="brand-logo"
-            src="/assets/actvet_emiratesskills_logo_white.svg"
-            alt="ACTVET EmiratesSkills"
-          />
-        </div>
-
         <div className="sidebar-skill-title">
           <span className="sidebar-program-title">E-Training</span>
           <span className="sidebar-skill-name">#50 - 3D Digital Game Art</span>
@@ -165,26 +136,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <path d="m16 17 5-5-5-5" />
                   <path d="M21 12H9" />
-                </svg>
-              </span>
-            </button>
-            <button
-              className="theme-toggle"
-              id="theme-toggle"
-              type="button"
-              aria-label="Toggle dark mode"
-              aria-pressed={isDark}
-              onClick={toggleTheme}
-            >
-              <span className="theme-toggle-icon sun-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-                </svg>
-              </span>
-              <span className="theme-toggle-icon moon-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.99 12.68A8.5 8.5 0 1 1 11.32 3.01 6.5 6.5 0 0 0 20.99 12.68z" />
                 </svg>
               </span>
             </button>

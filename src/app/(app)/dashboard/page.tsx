@@ -26,11 +26,6 @@ export default function DashboardPage() {
               src="/assets/competition_pathway.svg"
               alt="Competition checkpoints from Skills Challenge to EmiratesSkills, WorldSkills Asia, and WorldSkills International"
             />
-            <img
-              className="roadmap-svg-image dark-roadmap"
-              src="/assets/competition_pathway_dark.svg"
-              alt="Competition checkpoints from Skills Challenge to EmiratesSkills, WorldSkills Asia, and WorldSkills International"
-            />
             <div className="roadmap-stage-labels" aria-label="Competition checkpoint milestones">
               {checkpoints.map((checkpoint) => (
                 <div className="roadmap-stage" key={checkpoint.title}>

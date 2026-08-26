@@ -19,7 +19,7 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase/client";
+import { auth, googleProvider, microsoftProvider } from "@/lib/firebase/client";
 import { checkIsAdmin, createOwnProfile, ensureProfile } from "@/lib/data";
 
 type AuthContextValue = {
@@ -28,6 +28,7 @@ type AuthContextValue = {
   isAdmin: boolean;
   signInEmail: (email: string, password: string) => Promise<void>;
   signInGoogle: () => Promise<void>;
+  signInMicrosoft: () => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -72,6 +73,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signInMicrosoft = useCallback(async () => {
+    const cred = await signInWithPopup(auth, microsoftProvider);
+    try {
+      // First-time Microsoft users are provisioned here; unapproved ones are rejected.
+      const { isAdmin: admin } = await ensureProfile(cred.user);
+      setIsAdmin(admin);
+    } catch (err) {
+      await fbSignOut(auth).catch(() => {});
+      throw err;
+    }
+  }, []);
+
   const register = useCallback(async (email: string, password: string, displayName: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     if (displayName.trim()) {
@@ -94,8 +107,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, isAdmin, signInEmail, signInGoogle, register, signOut }),
-    [user, loading, isAdmin, signInEmail, signInGoogle, register, signOut],
+    () => ({
+      user,
+      loading,
+      isAdmin,
+      signInEmail,
+      signInGoogle,
+      signInMicrosoft,
+      register,
+      signOut,
+    }),
+    [user, loading, isAdmin, signInEmail, signInGoogle, signInMicrosoft, register, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,19 +2,22 @@
 
 import { useRef, useState } from "react";
 import { mapCourseRows, parseCsv } from "@/lib/csv";
-import { importCourseRows, type ImportSummary } from "@/lib/course-data";
+import { deleteAllCourseData, importCourseRows, type ImportSummary } from "@/lib/course-data";
+import ConfirmModal from "@/components/ConfirmModal";
 
 const TEMPLATE_HEADERS =
-  "LEVEL,CORE COMPETENCE,COMPETENCE UNIT,TITLE,DESCRIPTION,VIDEO LINK,REQUIRED TOOLS";
+  "LEVEL,CORE COMPETENCE,COMPETENCE UNIT,COMPETENCE UNIT NUMBER,VIDEO TITLE,REQUIRED TOOLS,QUICK DESCRIPTION,EMBED CODE";
 
 const TEMPLATE_SAMPLE =
-  'Foundation,1,Understand fundamentals of drawing and sketching,Interface and menus,Learn the Photoshop UI,https://...,"Adobe Photoshop, Drawing tablet"';
+  'Foundation,Create 2D original designs for game assets and apply 3D modeling techniques to create models with optimization and efficiency.,Understand fundamentals of drawing and sketching using Adobe Photoshop tools and brushes,1,02 - Interface and menus,"Adobe Photoshop, Drawing Tablet",Learn the Photoshop UI,"<iframe src=""https://...""></iframe>"';
 
 export default function CourseImport({ onImported }: { onImported: () => Promise<void> | void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   async function handleFile(file: File) {
     setBusy(true);
@@ -39,6 +42,21 @@ export default function CourseImport({ onImported }: { onImported: () => Promise
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function handleDeleteAll() {
+    setDeletingAll(true);
+    setErrors([]);
+    setSummary(null);
+    try {
+      await deleteAllCourseData();
+      await onImported();
+    } catch {
+      setErrors(["Couldn't delete the training material. Make sure the latest firestore.rules are published."]);
+    } finally {
+      setDeletingAll(false);
+      setConfirmingDeleteAll(false);
     }
   }
 
@@ -109,6 +127,32 @@ export default function CourseImport({ onImported }: { onImported: () => Promise
           ))}
           {errors.length > 8 && <div>…and {errors.length - 8} more.</div>}
         </div>
+      )}
+
+      <div className="import-danger">
+        <h3>Danger zone</h3>
+        <p className="admin-card-sub">
+          Permanently delete every core competence, competence unit, and video — use this to start a
+          fresh import from scratch. This cannot be undone.
+        </p>
+        <button
+          className="admin-btn-danger"
+          type="button"
+          disabled={deletingAll}
+          onClick={() => setConfirmingDeleteAll(true)}
+        >
+          {deletingAll ? "Deleting…" : "Delete all training material"}
+        </button>
+      </div>
+
+      {confirmingDeleteAll && (
+        <ConfirmModal
+          title="Delete all training material?"
+          message="This permanently deletes every core competence, competence unit, and video. This cannot be undone."
+          confirmLabel="Delete everything"
+          onConfirm={handleDeleteAll}
+          onCancel={() => setConfirmingDeleteAll(false)}
+        />
       )}
     </section>
   );

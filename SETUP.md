@@ -1,9 +1,17 @@
 # E-Training System — Setup & Deployment
 
 A Next.js 16 (App Router, TypeScript, Tailwind v4) app with Firebase Auth +
-Firestore, deployed on Vercel. This is a **client-only** app — there is no
-server code or service-account key. Access control is enforced entirely by
-Firestore security rules.
+Firestore, deployed on Vercel. Access control (who can register, who is
+admin, who can read/write what) is enforced entirely by Firestore security
+rules — there is no Firebase Admin SDK and no service-account key.
+
+The one exception is **training video playback**: SharePoint's own viewer
+can't be embedded for a signed-out visitor (Microsoft's login page refuses to
+render inside a frame), so there is exactly one small server route,
+`/api/resolve-video`, that resolves a video's SharePoint share link to a
+direct URL using an app-only Microsoft Graph credential. That credential is a
+real secret and lives server-only (see "Microsoft Graph" below) — it never
+reaches the browser.
 
 - **Approved emails** (an admin-managed allowlist) can register/use the app.
   An unapproved person can create an auth account, but the rules let them read
@@ -59,13 +67,16 @@ cp sample.env .env
 
 `.env` is gitignored — **never commit it**. Values:
 
-| Variable | Where it comes from |
-| --- | --- |
-| `NEXT_PUBLIC_FIREBASE_*` | Project settings → General → SDK setup |
+| Variable | Where it comes from | Secret? |
+| --- | --- | --- |
+| `NEXT_PUBLIC_FIREBASE_*` | Project settings → General → SDK setup | No — public identifier |
+| `NEXT_PUBLIC_MICROSOFT_TENANT_ID` | Azure Portal → Entra ID → Overview (optional) | No — public identifier |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_TENANT_ID` | Azure app registration → Overview | No — public identifier |
+| `MICROSOFT_CLIENT_SECRET` | Azure app registration → Certificates & secrets | **Yes — real secret** |
 
-These are public identifiers, not secrets. The admin email is **not** here — it
-lives only in `firestore.rules`. Access control is enforced entirely by the
-rules.
+The admin email is **not** an env var — it lives only in `firestore.rules`.
+`MICROSOFT_CLIENT_SECRET` is the only real secret in this app; see
+"Microsoft Graph" below for how to get it.
 
 > **Security model:** access is enforced server-side by Firestore rules. A user
 > can read/write only their own profile, and only if their email is on the
@@ -102,19 +113,42 @@ rules block all data access for anyone not approved.
 
 ---
 
-## 4. Media (SharePoint / OneDrive)
+## 4. Microsoft Graph (required for training videos to play)
 
-Paste a normal "Copy link" URL from SharePoint/OneDrive when adding media. A raw
-share link opens SharePoint's *viewer* and can't be embedded, so the app
-converts it to a direct URL (appends `download=1`) — see
-[`src/lib/sharepoint.ts`](src/lib/sharepoint.ts). For links to render:
+Admins paste a SharePoint/OneDrive share link (or the "Embed" dialog's
+`<iframe>` code — either works, see
+[`src/lib/sharepoint.ts`](src/lib/sharepoint.ts)) as each video's link in
+Admin → Training Material. **Do not iframe that link directly** — a signed-out
+viewer hits SharePoint's login page, which refuses to render inside a frame,
+so the video never appears. Instead, the app calls
+[`/api/resolve-video`](src/app/api/resolve-video/route.ts), which uses an
+**app-only** Microsoft Graph credential (server-side only) to resolve the
+share link to a direct, pre-authenticated download URL, then plays that in a
+plain `<video>` element.
 
-- Set the share scope so approved viewers can open it (e.g. "People in your
-  organization with the link").
-- Images and videos embed directly via `MediaEmbed`.
+### One-time Azure app registration
 
-For fully programmatic access (listing/uploading from the app), a future
-upgrade is Microsoft Graph with an Azure AD app registration.
+1. **Azure Portal → Microsoft Entra ID → App registrations → New registration.**
+   Any name; default (single tenant) account type is fine.
+2. **API permissions → Add a permission → Microsoft Graph → Application
+   permissions** (not Delegated) → search **`Sites.Read.All`** → Add permissions.
+3. Still on API permissions, click **Grant admin consent for \<tenant\>** —
+   this requires a Global/Application Administrator in your Entra tenant.
+4. **Certificates & secrets → Client secrets → New client secret.** Copy the
+   **Value** immediately (it's shown once) — that's `MICROSOFT_CLIENT_SECRET`.
+5. On the **Overview** page, copy **Application (client) ID** →
+   `MICROSOFT_CLIENT_ID`, and **Directory (tenant) ID** → `MICROSOFT_TENANT_ID`.
+6. Put all three in `.env` (locally) and in Vercel's environment variables
+   (deployed) — never commit them.
+
+Until these are set, video playback fails with a clear
+"Missing MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET / MICROSOFT_TENANT_ID"
+error rather than a silent blank player.
+
+Each video's share link must have sharing enabled for at least
+"People in your organization with the link" (or "Anyone with the link") —
+`Sites.Read.All` lets the app read it regardless of who's signed in, but the
+file's own sharing setting still has to allow that link to resolve at all.
 
 ---
 
@@ -125,7 +159,9 @@ upgrade is Microsoft Graph with an Azure AD app registration.
    Framework preset **Next.js** is auto-detected. Build command `bun run build`,
    install command `bun install`.
 3. **Settings → Environment Variables** — add every variable from your `.env`
-   (all environments). They're all `NEXT_PUBLIC_*`, no secrets.
+   (all environments), including `MICROSOFT_CLIENT_SECRET`. Vercel encrypts
+   environment variables and never exposes non-`NEXT_PUBLIC_` ones to the
+   browser bundle.
 4. Deploy. Then add the Vercel domain to Firebase **Authorized domains** (step 1.2).
 
 Every push to `main` redeploys automatically.
@@ -140,10 +176,14 @@ src/
     (app)/            authenticated app — dashboard, training, competences,
                       profile, admin, + coming-soon stubs (shared shell)
     (auth)/           login + register (public)
-  components/         AppShell, AuthGuard, MediaEmbed, dashboard pieces
-  lib/                firebase/client, auth-context, data (Firestore access),
-                      curriculum, sharepoint, types, helpers
-  styles/             legacy-dashboard.css (ported verbatim), auth.css, admin.css
+    api/resolve-video/  the one server route — resolves a SharePoint share
+                      link to a playable URL via app-only Graph
+  components/         AppShell, AuthGuard, dashboard pieces
+  lib/                firebase/client, auth-context, data + course-data
+                      (Firestore access), curriculum, sharepoint, msgraph-server
+                      (server-only Graph credential), types, helpers
+  styles/             legacy-dashboard.css (ported verbatim), auth.css,
+                      admin.css, curriculum-builder.css, training-admin.css
 legacy/               the original static prototype (archived)
 firestore.rules       Firestore security rules (the enforcement layer +
                       the admin email)

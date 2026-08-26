@@ -79,6 +79,20 @@
   color: var(--blue);
 }
 
+/* Small camera icon between the number and the lesson title. */
+.lesson-video-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  opacity: 0.75;
+}
+
+.curriculum-video-item.current .lesson-video-icon,
+.curriculum-video-item.watched .lesson-video-icon {
+  color: var(--blue);
+  opacity: 1;
+}
+
 /* Edge hover zones — thin & invisible when idle, expand on hover. */
 .vid-side {
   flex-shrink: 0;
@@ -311,6 +325,23 @@
   gap: 4px;
   max-height: 180px;
   overflow-y: auto;
+}
+
+.import-danger {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.import-danger h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin-bottom: 4px;
+}
+
+.import-danger .admin-card-sub {
+  margin-bottom: 10px;
 }
 
 .level-chip {

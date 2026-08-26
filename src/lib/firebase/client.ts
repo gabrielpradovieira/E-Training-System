@@ -1,7 +1,7 @@
 "use client";
 
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, OAuthProvider, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -18,3 +18,14 @@ export const firebaseApp: FirebaseApp = getApps().length ? getApp() : initialize
 export const auth: Auth = getAuth(firebaseApp);
 export const db: Firestore = getFirestore(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();
+
+// "Sign in with Microsoft" as a login option. Training videos are resolved
+// server-side via an app-only Graph credential (src/lib/msgraph-server.ts),
+// not via this per-user sign-in, so no extra Graph scopes are requested here
+// — just the default OpenID sign-in.
+export const microsoftProvider = new OAuthProvider("microsoft.com");
+// Restricts sign-in to a single Entra tenant (e.g. the ACTVET school tenant)
+// instead of "any Microsoft account". Optional — omit the env var to allow any tenant.
+if (process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID) {
+  microsoftProvider.setCustomParameters({ tenant: process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID });
+}
