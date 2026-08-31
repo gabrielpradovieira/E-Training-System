@@ -1,69 +1,43 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  buildCurriculumForLevel,
-  competenceUnits,
-  type CurriculumItemType,
-  type CurriculumLevel,
-} from "@/lib/curriculum";
+import { curriculum, type CurriculumCategory } from "@/lib/curriculum";
 
-const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = [
-  { level: "foundation", label: "Foundation" },
-  { level: "intermediate", label: "Intermediate" },
-  { level: "advanced", label: "Advanced" },
-];
-
-function ItemKindIcon({ type }: { type: CurriculumItemType }) {
-  void type;
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="m9 18 6-6-6-6v12Z"></path>
-      <rect x="3" y="5" width="18" height="14" rx="3"></rect>
-    </svg>
-  );
-}
-
-// Foundation units (cu <= 5) start with their video lessons marked watched.
-const initialWatched = new Set<string>();
-competenceUnits.forEach((unit) => {
-  if (unit.cu <= 5) {
-    const topicId = `course-cu-${unit.cu}`;
-    // Overview / Tool workflow / Practice = 3 video items.
-    for (let i = 0; i < 3; i += 1) initialWatched.add(`${topicId}-${i}`);
-  }
-});
+const CATEGORY_TABS = curriculum.map((group) => ({
+  category: group.category,
+  label: group.label,
+  badge: group.badge,
+}));
 
 const CERTIFICATE_PERCENT = 15;
 
 export default function TrainingPage() {
-  const [activeLevel, setActiveLevel] = useState<CurriculumLevel>("foundation");
+  const [activeCategory, setActiveCategory] = useState<CurriculumCategory>(CATEGORY_TABS[0].category);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
-  const [watched, setWatched] = useState<Set<string>>(() => new Set(initialWatched));
+  const [watched, setWatched] = useState<Set<string>>(new Set());
   const [currentLessonKey, setCurrentLessonKey] = useState<string | null>(null);
 
-  const groups = useMemo(() => buildCurriculumForLevel(activeLevel), [activeLevel]);
+  const sections = useMemo(
+    () => curriculum.find((group) => group.category === activeCategory)?.sections ?? [],
+    [activeCategory],
+  );
 
-  // Flat, ordered list of every lesson key in the active level (for prev/next).
+  // Flat, ordered list of every lesson key in the active category (for prev/next).
   const lessonKeys = useMemo(() => {
     const keys: string[] = [];
-    groups.forEach((group) => {
-      group.units.forEach((unit) => {
-        unit.items.forEach((_, index) => keys.push(`${unit.topicId}-${index}`));
-      });
+    sections.forEach((sectionEntry) => {
+      sectionEntry.items.forEach((_, index) => keys.push(`${sectionEntry.sectionId}-${index}`));
     });
     return keys;
-  }, [groups]);
+  }, [sections]);
 
   const lessonLabels = useMemo(() => {
     const map = new Map<string, string>();
-    groups.forEach((group) => {
-      group.units.forEach((unit) => {
-        unit.items.forEach((item, index) => map.set(`${unit.topicId}-${index}`, item.label));
-      });
+    sections.forEach((sectionEntry) => {
+      sectionEntry.items.forEach((item, index) => map.set(`${sectionEntry.sectionId}-${index}`, item.label));
     });
     return map;
-  }, [groups]);
+  }, [sections]);
 
   const currentIndex = currentLessonKey ? lessonKeys.indexOf(currentLessonKey) : -1;
   const totalLessons = lessonKeys.length;
@@ -75,8 +49,8 @@ export default function TrainingPage() {
     ? `Lesson ${currentIndex + 1} of ${totalLessons} in the 3D Digital Game Art curriculum.`
     : "Select any lesson from the curriculum on the right to begin watching the training videos.";
 
-  function changeLevel(level: CurriculumLevel) {
-    setActiveLevel(level);
+  function changeCategory(category: CurriculumCategory) {
+    setActiveCategory(category);
     setOpenTopics(new Set());
     setCurrentLessonKey(null);
   }
@@ -257,78 +231,72 @@ export default function TrainingPage() {
               <div className="curriculum-title-row">
                 <h3>Course Curriculum</h3>
               </div>
-              <div className="curriculum-level-tabs" role="tablist" aria-label="Curriculum level filter">
-                {LEVEL_TABS.map((tab) => (
+              <div className="curriculum-level-tabs" role="tablist" aria-label="Curriculum category filter">
+                {CATEGORY_TABS.map((tab) => (
                   <button
-                    key={tab.level}
-                    className={`curriculum-level-tab${activeLevel === tab.level ? " active" : ""}`}
+                    key={tab.category}
+                    className={`curriculum-level-tab${activeCategory === tab.category ? " active" : ""}`}
                     type="button"
                     role="tab"
-                    aria-selected={activeLevel === tab.level}
-                    onClick={() => changeLevel(tab.level)}
+                    aria-selected={activeCategory === tab.category}
+                    onClick={() => changeCategory(tab.category)}
                   >
+                    <span className={`category-badge badge-${tab.category}`} aria-hidden="true">{tab.badge}</span>
                     {tab.label}
                   </button>
                 ))}
               </div>
             </div>
             <div className="accordion-container curriculum-cu-list" id="curriculum-cu-list">
-              {groups.map((group) => (
-                <div key={group.core}>
-                  <div className="curriculum-core-heading">
-                    <span>Core Competence {group.core}</span>
-                    <p>{group.description}</p>
+              {sections.map((sectionEntry) => {
+                const isOpen = openTopics.has(sectionEntry.sectionId);
+                return (
+                  <div className="accordion-topic curriculum-cu-topic" key={sectionEntry.sectionId}>
+                    <button
+                      className={`accordion-btn${isOpen ? " active" : ""}`}
+                      type="button"
+                      onClick={() => toggleTopic(sectionEntry.sectionId)}
+                    >
+                      <span className="topic-copy">
+                        <span className="topic-title">{sectionEntry.title}</span>
+                      </span>
+                      <span className="accordion-arrow">&rsaquo;</span>
+                    </button>
+                    <div className={`accordion-content${isOpen ? " active" : ""}`} id={sectionEntry.sectionId}>
+                      {sectionEntry.items.map((item, index) => {
+                        const key = `${sectionEntry.sectionId}-${index}`;
+                        const isWatched = watched.has(key);
+                        const isCurrent = currentLessonKey === key;
+                        const className = `detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`;
+                        return (
+                          <div
+                            key={key}
+                            className={className}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={isWatched}
+                            onClick={() => selectLesson(key)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                selectLesson(key);
+                              }
+                            }}
+                          >
+                            <span className="curriculum-item-kind video">
+                              <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m9 18 6-6-6-6v12Z"></path>
+                                <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+                              </svg>
+                            </span>
+                            <span className="lesson-label">{item.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  {group.units.map((unit) => {
-                    const isOpen = openTopics.has(unit.topicId);
-                    return (
-                      <div className="accordion-topic curriculum-cu-topic" key={unit.topicId}>
-                        <button
-                          className={`accordion-btn${isOpen ? " active" : ""}`}
-                          type="button"
-                          onClick={() => toggleTopic(unit.topicId)}
-                        >
-                          <span className="curriculum-cu-code">CU {unit.cu}</span>
-                          <span className="topic-copy">
-                            <span className="topic-title">{unit.title}</span>
-                          </span>
-                          <span className="accordion-arrow">&rsaquo;</span>
-                        </button>
-                        <div className={`accordion-content${isOpen ? " active" : ""}`} id={unit.topicId}>
-                          {unit.items.map((item, index) => {
-                            const key = `${unit.topicId}-${index}`;
-                            const isWatched = watched.has(key);
-                            const isCurrent = currentLessonKey === key;
-                            const className = `detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`;
-                            return (
-                              <div
-                                key={key}
-                                className={className}
-                                role="button"
-                                tabIndex={0}
-                                aria-pressed={isWatched}
-                                onClick={() => selectLesson(key)}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter" || event.key === " ") {
-                                    event.preventDefault();
-                                    selectLesson(key);
-                                  }
-                                }}
-                              >
-                                <span className={`curriculum-item-kind ${item.itemType}`}>
-                                  <ItemKindIcon type={item.itemType} />
-                                </span>
-                                <span className="lesson-label">{item.label}</span>
-                                <span className="lesson-duration">{item.meta}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

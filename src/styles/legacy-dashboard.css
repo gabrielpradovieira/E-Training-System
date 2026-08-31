@@ -480,12 +480,33 @@
       font: inherit;
       font-size: 0.76rem;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .curriculum-level-tab.active {
       color: var(--nav-1);
       background: #ffffff;
     }
+
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: #ffffff;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .badge-concept-art { background: #001e36; }
+    .badge-3d-modeling { background: #0696d7; }
 
     .curriculum-core-heading {
       padding: 14px 18px 10px;
