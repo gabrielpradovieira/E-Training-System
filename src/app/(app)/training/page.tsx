@@ -39,8 +39,19 @@ export default function TrainingPage() {
     return map;
   }, [sections]);
 
+  const lessonUrls = useMemo(() => {
+    const map = new Map<string, string>();
+    sections.forEach((sectionEntry) => {
+      sectionEntry.items.forEach((item, index) => {
+        if (item.url) map.set(`${sectionEntry.sectionId}-${index}`, item.url);
+      });
+    });
+    return map;
+  }, [sections]);
+
   const currentIndex = currentLessonKey ? lessonKeys.indexOf(currentLessonKey) : -1;
   const totalLessons = lessonKeys.length;
+  const currentVideoUrl = currentLessonKey ? lessonUrls.get(currentLessonKey) : undefined;
 
   const videoTitle = currentIndex >= 0 && currentLessonKey
     ? lessonLabels.get(currentLessonKey) ?? "Welcome to 3D Digital Game Art"
@@ -88,10 +99,21 @@ export default function TrainingPage() {
           <div className="video-section">
             <div className="video-player glass">
               <div className="video-container">
-                <div className="video-placeholder">
-                  <div className="play-icon">&#9658;</div>
-                  <p>Select a lesson to start learning</p>
-                </div>
+                {currentVideoUrl ? (
+                  <iframe
+                    key={currentVideoUrl}
+                    className="video-frame"
+                    src={currentVideoUrl}
+                    title={videoTitle}
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="video-placeholder">
+                    <div className="play-icon">&#9658;</div>
+                    <p>Select a lesson to start learning</p>
+                  </div>
+                )}
               </div>
               <div className="video-info">
                 <div className="video-copy">

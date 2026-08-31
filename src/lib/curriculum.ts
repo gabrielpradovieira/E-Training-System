@@ -23,13 +23,20 @@ function section(category: CurriculumCategory, title: string, labels: string[]):
   return { title, sectionId, items: labels.map((label) => ({ label })) };
 }
 
+const FIRST_VIDEO_URL =
+  "https://1drv.ms/v/c/d14666fc896f6975/IQAsGrxc1aGsRbq_S30-LFCEAd_ZolxBGY3WwBrxCES7svU?e=RFIAgs";
+
 export const curriculum: CurriculumCategoryGroup[] = [
   {
     category: "concept-art",
     label: "Concept Art",
     badge: "Ps",
     sections: [
-      section("concept-art", "What kinds of tools we use?", ["Hardwares", "Softwares"]),
+      (() => {
+        const s = section("concept-art", "What kinds of tools we use?", ["Hardwares", "Softwares"]);
+        s.items[0].url = FIRST_VIDEO_URL;
+        return s;
+      })(),
       section("concept-art", "Understand and use Adobe Photoshop", [
         "Interface and menus",
         "Layers",
