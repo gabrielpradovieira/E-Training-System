@@ -54,32 +54,7 @@ export const competenceUnits: CompetenceUnit[] = [
   { cu: 33, core: 7, title: "Develop solid workflow across softwares for accurate execution of multiple tasks" },
 ];
 
-export type ResourcePrompt = { type: "task" | "doc"; label: string };
-
-export const curriculumResourcePrompts: ResourcePrompt[] = [
-  { type: "task", label: "Sketch Sonic from reference" },
-  { type: "doc", label: "Photoshop brush setup guide" },
-  { type: "task", label: "Block out a simple prop silhouette" },
-  { type: "doc", label: "Maya modelling shortcuts sheet" },
-  { type: "task", label: "Clean topology check on a hard-surface model" },
-  { type: "doc", label: "ZBrush sculpting checklist" },
-  { type: "task", label: "Create UV shells for a small game asset" },
-  { type: "doc", label: "PBR texture export settings" },
-  { type: "task", label: "Bake normal maps for a game-ready asset" },
-  { type: "doc", label: "Rig naming convention reference" },
-  { type: "task", label: "Animate a bouncing ball timing pass" },
-  { type: "doc", label: "Unreal Engine import checklist" },
-  { type: "task", label: "Build a small interactive blueprint trigger" },
-  { type: "doc", label: "Playable demo submission checklist" },
-  { type: "task", label: "Create three original concept thumbnails" },
-  { type: "doc", label: "Topology flow examples" },
-  { type: "task", label: "Speed model a mechanical detail asset" },
-  { type: "doc", label: "Advanced painting layer structure" },
-  { type: "task", label: "Polish an animation loop for presentation" },
-  { type: "doc", label: "Final production workflow checklist" },
-];
-
-export type CurriculumItemType = "video" | "task" | "doc";
+export type CurriculumItemType = "video";
 
 export type CurriculumLessonItem = {
   itemType: CurriculumItemType;
@@ -122,16 +97,6 @@ export function buildCurriculumForLevel(level: CurriculumLevel): CurriculumCoreG
       { itemType: "video", label: "Tool workflow tutorial", meta: "12 min", initiallyWatched: watched },
       { itemType: "video", label: "Practice walkthrough", meta: "19 min", initiallyWatched: watched },
     ];
-
-    if (unit.cu % 2 === 0 || unit.cu % 10 === 5 || unit.cu === 33) {
-      const prompt = curriculumResourcePrompts[(unit.cu - 1) % curriculumResourcePrompts.length];
-      items.push({
-        itemType: prompt.type,
-        label: prompt.label,
-        meta: prompt.type === "task" ? "Task" : "Resource",
-        initiallyWatched: false,
-      });
-    }
 
     groups[groups.length - 1].units.push({
       cu: unit.cu,

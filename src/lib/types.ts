@@ -11,11 +11,3 @@ export type UserProfile = {
   createdAt?: number;
   lastLoginAt?: number;
 };
-
-export type AllowlistEntry = {
-  email: string;
-  displayName?: string;
-  addedBy?: string;
-  addedAt?: number;
-  registered?: boolean;
-};

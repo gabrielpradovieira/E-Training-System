@@ -21,7 +21,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     if (!user) {
-      const next = encodeURIComponent(pathname || "/dashboard");
+      const next = encodeURIComponent(pathname || "/training");
       router.replace(`/login?next=${next}`);
       return;
     }

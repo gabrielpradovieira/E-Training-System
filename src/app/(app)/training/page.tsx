@@ -14,32 +14,12 @@ const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = [
   { level: "advanced", label: "Advanced" },
 ];
 
-const TASK_ORIENTED_DOC_URL =
-  "file:///C:/Users/LENOVO/Desktop/DOCUMENTS/Task%20Oriented%20Approach/Task%20Oriented%20Approach%20-%203D%20Digital%20Game%20Art.pdf";
-
 function ItemKindIcon({ type }: { type: CurriculumItemType }) {
-  if (type === "video") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="m9 18 6-6-6-6v12Z"></path>
-        <rect x="3" y="5" width="18" height="14" rx="3"></rect>
-      </svg>
-    );
-  }
-  if (type === "task") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 11l3 3L22 4"></path>
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-      </svg>
-    );
-  }
+  void type;
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <path d="M14 2v6h6"></path>
-      <path d="M8 13h8"></path>
-      <path d="M8 17h5"></path>
+      <path d="m9 18 6-6-6-6v12Z"></path>
+      <rect x="3" y="5" width="18" height="14" rx="3"></rect>
     </svg>
   );
 }
@@ -276,19 +256,6 @@ export default function TrainingPage() {
             <div className="curriculum-header">
               <div className="curriculum-title-row">
                 <h3>Course Curriculum</h3>
-                <a
-                  className="curriculum-info-btn"
-                  href={TASK_ORIENTED_DOC_URL}
-                  target="_blank"
-                  rel="noopener"
-                  aria-label="Open task oriented approach document"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 16v-4"></path>
-                    <path d="M12 8h.01"></path>
-                  </svg>
-                </a>
               </div>
               <div className="curriculum-level-tabs" role="tablist" aria-label="Curriculum level filter">
                 {LEVEL_TABS.map((tab) => (
@@ -332,10 +299,7 @@ export default function TrainingPage() {
                             const key = `${unit.topicId}-${index}`;
                             const isWatched = watched.has(key);
                             const isCurrent = currentLessonKey === key;
-                            const className =
-                              item.itemType === "video"
-                                ? `detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`
-                                : `detail-item curriculum-resource-item resource-${item.itemType}${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`;
+                            const className = `detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`;
                             return (
                               <div
                                 key={key}
