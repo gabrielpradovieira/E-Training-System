@@ -9,18 +9,15 @@ import {
   useState,
 } from "react";
 import {
-  createUserWithEmailAndPassword,
-  deleteUser,
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as fbSignOut,
-  updateProfile,
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/client";
-import { checkIsAdmin, createOwnProfile, ensureProfile } from "@/lib/data";
+import { checkIsAdmin, ensureProfile } from "@/lib/data";
 
 type AuthContextValue = {
   user: User | null;
@@ -28,7 +25,6 @@ type AuthContextValue = {
   isAdmin: boolean;
   signInEmail: (email: string, password: string) => Promise<void>;
   signInGoogle: () => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -72,30 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string, displayName: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    if (displayName.trim()) {
-      await updateProfile(cred.user, { displayName: displayName.trim() }).catch(() => {});
-    }
-    try {
-      // Firestore rules reject this for non-approved emails.
-      await createOwnProfile(cred.user);
-    } catch (err) {
-      // Not approved — remove the account we just created so nothing is left behind.
-      await deleteUser(cred.user).catch(() => {});
-      await fbSignOut(auth).catch(() => {});
-      throw err;
-    }
-    setIsAdmin(await checkIsAdmin());
-  }, []);
-
   const signOut = useCallback(async () => {
     await fbSignOut(auth);
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, isAdmin, signInEmail, signInGoogle, register, signOut }),
-    [user, loading, isAdmin, signInEmail, signInGoogle, register, signOut],
+    () => ({ user, loading, isAdmin, signInEmail, signInGoogle, signOut }),
+    [user, loading, isAdmin, signInEmail, signInGoogle, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

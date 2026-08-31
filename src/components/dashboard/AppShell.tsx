@@ -12,13 +12,13 @@ const THEME_STORAGE_KEY = "tv-dashboard-theme";
 
 function currentSlug(pathname: string): string {
   const slug = pathname.split("/").filter(Boolean)[0];
-  return slug && pageMeta[slug] ? slug : "dashboard";
+  return slug && pageMeta[slug] ? slug : "training";
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const slug = currentSlug(pathname);
   const meta = pageMeta[slug];
 
@@ -97,20 +97,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="link-text">{item.label}</span>
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className={`menu-link${slug === "admin" ? " active" : ""}`}
-              >
-                <img
-                  className="link-icon sidebar-vector-icon"
-                  src="/assets/icon-sidebar-marking.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-                <span className="link-text">Admin Panel</span>
-              </Link>
-            )}
           </div>
         </nav>
 

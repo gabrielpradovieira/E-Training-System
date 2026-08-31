@@ -1,7 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -28,8 +27,7 @@ export default function LoginPage() {
 function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/dashboard";
-  const registered = searchParams.get("registered") === "1";
+  const nextPath = searchParams.get("next") || "/training";
   const notApproved = searchParams.get("error") === "not-approved";
   const { user, loading, signInEmail, signInGoogle } = useAuth();
 
@@ -81,7 +79,6 @@ function LoginInner() {
       <h1 className="auth-title">E-Training System</h1>
       <p className="auth-subtitle">Sign in to continue</p>
 
-      {registered && <div className="auth-success">Account created. You can sign in now.</div>}
       {error && <div className="auth-error">{error}</div>}
 
       <form onSubmit={handleEmailSubmit}>
@@ -118,13 +115,6 @@ function LoginInner() {
         <GoogleIcon />
         Continue with Google
       </button>
-
-      <p className="auth-footer">
-        Approved by your trainer?{" "}
-        <Link href={`/register${nextPath !== "/dashboard" ? `?next=${encodeURIComponent(nextPath)}` : ""}`}>
-          Create your account
-        </Link>
-      </p>
     </div>
   );
 }
