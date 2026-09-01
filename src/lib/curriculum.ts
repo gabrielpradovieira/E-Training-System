@@ -24,7 +24,7 @@ function section(category: CurriculumCategory, title: string, labels: string[]):
 }
 
 const FIRST_VIDEO_URL =
-  "https://1drv.ms/v/c/d14666fc896f6975/IQAsGrxc1aGsRbq_S30-LFCEAd_ZolxBGY3WwBrxCES7svU?e=RFIAgs";
+  "https://1drv.ms/v/c/d14666fc896f6975/IQQsGrxc1aGsRbq_S30-LFCEAf6PTNpzgBNJgdSM9daR8vY?width=1920&height=1080";
 
 export const curriculum: CurriculumCategoryGroup[] = [
   {
