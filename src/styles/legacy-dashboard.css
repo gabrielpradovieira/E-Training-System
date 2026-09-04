@@ -408,7 +408,7 @@
       gap: 16px;
       flex: 0 0 auto;
       min-height: 0;
-      align-items: stretch;
+      align-items: start;
       overflow: visible;
     }
 
@@ -3406,7 +3406,7 @@
         gap: 10px;
         flex: 0 0 auto;
         min-height: 0;
-        align-items: stretch;
+        align-items: start;
       }
 
       .curriculum-sidebar {
@@ -3764,7 +3764,7 @@
 
       .training-layout {
         grid-template-columns: 1fr;
-        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-rows: auto auto;
         gap: 8px;
       }
 
