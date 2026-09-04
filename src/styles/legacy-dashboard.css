@@ -912,6 +912,126 @@
       padding-left: 44px;
     }
 
+    .topic-task-count {
+      display: block;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 400;
+      opacity: 0.75;
+    }
+
+    .add-task-btn {
+      margin-left: 6px;
+      flex-shrink: 0;
+      border: 1px dashed var(--blue);
+      background: transparent;
+      color: var(--blue);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .detail-item:hover .add-task-btn,
+    .detail-item:focus-within .add-task-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .add-task-btn:hover {
+      background: rgba(92, 119, 171, 0.12);
+    }
+
+    .lesson-tasks {
+      padding: 6px 18px 10px 62px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--card-inner);
+    }
+
+    .lesson-task-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .lesson-task-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--blue);
+      text-decoration: none;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .lesson-task-link:hover {
+      text-decoration: underline;
+    }
+
+    .lesson-task-link svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .lesson-task-link span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-complete-btn {
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .task-complete-btn:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .task-complete-btn.completed {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .task-delete-btn {
+      flex-shrink: 0;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 2px;
+      display: inline-flex;
+    }
+
+    .task-delete-btn:hover {
+      color: #dc2626;
+    }
+
+    .task-delete-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
     /* Left Column - Video Player */
     .video-section {
       display: flex;
@@ -4693,6 +4813,52 @@
       border-radius: 999px;
       background: var(--blue);
       transition: width 0.3s ease;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-panel {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 16px;
+      padding: 20px;
+      background: var(--panel);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .modal-head h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-close-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      display: inline-flex;
+    }
+
+    .modal-close-btn svg {
+      width: 18px;
+      height: 18px;
     }
 
     .progress-cell-value {

@@ -135,6 +135,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Curriculum tasks attached to a lesson (name + external link). Anyone
+    // approved can see them; only admin creates/edits/removes them. A
+    // student's own completion of a task lives at
+    // users/{uid}/taskCompletions/{taskId}, covered by the users/{uid}
+    // subcollection rule above (owner read/write, teacher read-only for
+    // their own school, admin everything).
+    match /tasks/{taskId} {
+      allow read:  if canUse();
+      allow write: if isAdmin();
+    }
+
     // Legacy/unused-by-current-code collections, kept from the prior rules
     // as-is (nothing in the app reads or writes these right now).
     match /cores/{coreId} {

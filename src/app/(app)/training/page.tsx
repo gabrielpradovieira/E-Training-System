@@ -10,6 +10,17 @@ import {
 import { bunnyEmbedUrl } from "@/lib/bunny";
 import { useAuth } from "@/lib/auth-context";
 import { getTrainingProgress, saveTrainingProgress, saveWatchedLessons } from "@/lib/progress";
+import {
+  createTask,
+  deleteTask,
+  fetchTaskCompletions,
+  fetchTasksForLevel,
+  markTaskCompleted,
+  unmarkTaskCompleted,
+  type LessonTask,
+  type TaskCompletion,
+} from "@/lib/tasks";
+import Modal from "@/components/dashboard/Modal";
 
 const FIRST_LEVEL: CurriculumLevel = "concept-art";
 const FIRST_TOPIC_ID = "concept-art-tools";
@@ -32,13 +43,126 @@ function ItemKindIcon({ type }: { type: CurriculumItemType }) {
   );
 }
 
+function TaskIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="3" width="16" height="18" rx="2.5"></rect>
+      <path d="m8.5 9 1.7 1.7L13.5 7.4"></path>
+      <path d="M8.5 16h7"></path>
+    </svg>
+  );
+}
+
+function AddTaskModal({
+  lessonLabel,
+  busy,
+  status,
+  onSubmit,
+  onClose,
+}: {
+  lessonLabel: string;
+  busy: boolean;
+  status: { kind: "success" | "error"; message: string } | null;
+  onSubmit: (name: string, link: string) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [link, setLink] = useState("");
+
+  return (
+    <Modal title={`Add task to "${lessonLabel}"`} onClose={onClose}>
+      <form
+        className="admin-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit(name, link);
+        }}
+      >
+        <div className="admin-field">
+          <label htmlFor="task-name">Task name</label>
+          <input id="task-name" type="text" required value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="admin-field">
+          <label htmlFor="task-link">External link</label>
+          <input
+            id="task-link"
+            type="url"
+            required
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+        {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
+        <button className="admin-submit-btn" type="submit" disabled={busy}>
+          {busy ? "Adding…" : "Add task"}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function CompleteTaskModal({
+  task,
+  busy,
+  status,
+  onSubmit,
+  onClose,
+}: {
+  task: LessonTask;
+  busy: boolean;
+  status: { kind: "success" | "error"; message: string } | null;
+  onSubmit: (link: string) => void;
+  onClose: () => void;
+}) {
+  const [link, setLink] = useState("");
+
+  return (
+    <Modal title={`Mark "${task.name}" as completed`} onClose={onClose}>
+      <form
+        className="admin-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit(link);
+        }}
+      >
+        <div className="admin-field">
+          <label htmlFor="submission-link">Your submission link (OneDrive folder)</label>
+          <input
+            id="submission-link"
+            type="url"
+            required
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://onedrive.live.com/..."
+          />
+        </div>
+        <p className="csv-hint">A link to your OneDrive submission is required to mark this task as completed.</p>
+        {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
+        <button className="admin-submit-btn" type="submit" disabled={busy}>
+          {busy ? "Saving…" : "Mark as completed"}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
 export default function TrainingPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [activeLevel, setActiveLevel] = useState<CurriculumLevel>(FIRST_LEVEL);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [watched, setWatched] = useState<Set<string>>(new Set());
   const [currentLessonKey, setCurrentLessonKey] = useState<string | null>(null);
   const [progressLoaded, setProgressLoaded] = useState(false);
+
+  const [tasks, setTasks] = useState<LessonTask[]>([]);
+  const [completions, setCompletions] = useState<Map<string, TaskCompletion>>(new Map());
+  const [addTaskFor, setAddTaskFor] = useState<string | null>(null);
+  const [addTaskBusy, setAddTaskBusy] = useState(false);
+  const [addTaskStatus, setAddTaskStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [completingTask, setCompletingTask] = useState<LessonTask | null>(null);
+  const [completeBusy, setCompleteBusy] = useState(false);
+  const [completeStatus, setCompleteStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   // Resume where the student left off, once per sign-in — or, for a brand new
   // student with no saved progress yet, open the very first lesson.
@@ -84,6 +208,39 @@ export default function TrainingPage() {
     };
   }, [user]);
 
+  // This user's task completions, fetched once per sign-in.
+  useEffect(() => {
+    if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCompletions(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchTaskCompletions(user.uid)
+      .then((map) => {
+        if (!cancelled) setCompletions(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Tasks attached to lessons in the active level.
+  useEffect(() => {
+    let cancelled = false;
+    fetchTasksForLevel(activeLevel)
+      .then((list) => {
+        if (!cancelled) setTasks(list);
+      })
+      .catch(() => {
+        if (!cancelled) setTasks([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLevel]);
+
   const sections = useMemo(() => buildCurriculumForLevel(activeLevel), [activeLevel]);
 
   // Flat, ordered list of every lesson key in the active level (for prev/next).
@@ -112,6 +269,16 @@ export default function TrainingPage() {
     });
     return map;
   }, [sections]);
+
+  const tasksByLesson = useMemo(() => {
+    const map = new Map<string, LessonTask[]>();
+    tasks.forEach((task) => {
+      const list = map.get(task.lessonKey) ?? [];
+      list.push(task);
+      map.set(task.lessonKey, list);
+    });
+    return map;
+  }, [tasks]);
 
   const currentIndex = currentLessonKey ? lessonKeys.indexOf(currentLessonKey) : -1;
   const totalLessons = lessonKeys.length;
@@ -162,6 +329,78 @@ export default function TrainingPage() {
     if (!lessonKeys.length) return;
     const nextIndex = currentIndex < 0 ? 0 : Math.min(Math.max(currentIndex + offset, 0), lessonKeys.length - 1);
     playLesson(lessonKeys[nextIndex]);
+  }
+
+  async function handleAddTask(name: string, link: string) {
+    if (!user || !addTaskFor) return;
+    if (!name.trim() || !link.trim()) return;
+    setAddTaskBusy(true);
+    setAddTaskStatus(null);
+    try {
+      const task = await createTask({
+        level: activeLevel,
+        lessonKey: addTaskFor,
+        name,
+        link,
+        createdBy: user.uid,
+      });
+      setTasks((prev) => [...prev, task]);
+      setAddTaskFor(null);
+    } catch (err) {
+      setAddTaskStatus({
+        kind: "error",
+        message: err instanceof Error ? err.message : "Couldn't add the task. Please try again.",
+      });
+    } finally {
+      setAddTaskBusy(false);
+    }
+  }
+
+  async function handleDeleteTask(taskId: string) {
+    if (!window.confirm("Remove this task?")) return;
+    try {
+      await deleteTask(taskId);
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    } catch {
+      // Best-effort — the admin can just try again.
+    }
+  }
+
+  async function handleCompleteTask(link: string) {
+    if (!user || !completingTask) return;
+    if (!link.trim()) return;
+    setCompleteBusy(true);
+    setCompleteStatus(null);
+    try {
+      await markTaskCompleted(user.uid, completingTask.id, link);
+      setCompletions((prev) => {
+        const next = new Map(prev);
+        next.set(completingTask.id, { taskId: completingTask.id, link: link.trim(), completedAt: Date.now() });
+        return next;
+      });
+      setCompletingTask(null);
+    } catch (err) {
+      setCompleteStatus({
+        kind: "error",
+        message: err instanceof Error ? err.message : "Couldn't save your completion. Please try again.",
+      });
+    } finally {
+      setCompleteBusy(false);
+    }
+  }
+
+  async function handleUnmarkTask(taskId: string) {
+    if (!user) return;
+    try {
+      await unmarkTaskCompleted(user.uid, taskId);
+      setCompletions((prev) => {
+        const next = new Map(prev);
+        next.delete(taskId);
+        return next;
+      });
+    } catch {
+      // Best-effort — the button will just still read "Completed" if it fails.
+    }
   }
 
   return (
@@ -339,6 +578,10 @@ export default function TrainingPage() {
                 const completedCount = sectionEntry.items.filter((_, index) =>
                   watched.has(`${sectionEntry.id}-${index}`),
                 ).length;
+                const sectionTaskCount = sectionEntry.items.reduce(
+                  (sum, _, index) => sum + (tasksByLesson.get(`${sectionEntry.id}-${index}`)?.length ?? 0),
+                  0,
+                );
                 return (
                   <div className="accordion-topic curriculum-cu-topic" key={sectionEntry.id}>
                     <button
@@ -350,6 +593,11 @@ export default function TrainingPage() {
                         <span className="topic-title">
                           {sectionNumber}. {sectionEntry.title}
                         </span>
+                        {sectionTaskCount > 0 && (
+                          <span className="topic-task-count">
+                            {sectionTaskCount} Task{sectionTaskCount === 1 ? "" : "s"}
+                          </span>
+                        )}
                       </span>
                       <span className="topic-progress-count">
                         {completedCount}/{sectionEntry.items.length}
@@ -362,37 +610,92 @@ export default function TrainingPage() {
                         const isWatched = watched.has(key);
                         const isCurrent = currentLessonKey === key;
                         const className = `detail-item curriculum-video-item${isWatched ? " watched" : ""}${isCurrent ? " current" : ""}`;
+                        const lessonTasks = tasksByLesson.get(key) ?? [];
                         return (
-                          <div
-                            key={key}
-                            className={className}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => playLesson(key)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                playLesson(key);
-                              }
-                            }}
-                          >
-                            <button
-                              type="button"
-                              className={`lesson-watched-toggle${isWatched ? " watched" : ""}`}
-                              aria-pressed={isWatched}
-                              aria-label={isWatched ? "Mark lesson as not watched" : "Mark lesson as watched"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toggleWatched(key);
+                          <div className="lesson-block" key={key}>
+                            <div
+                              className={className}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => playLesson(key)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  playLesson(key);
+                                }
                               }}
-                            />
-                            <span className={`curriculum-item-kind ${item.itemType}`}>
-                              <ItemKindIcon type={item.itemType} />
-                            </span>
-                            <span className="lesson-label">{item.label}</span>
-                            {!item.bunnyVideoId && <span className="upcoming-badge">Upcoming</span>}
-                            {item.durationLabel && (
-                              <span className="lesson-duration">{item.durationLabel}</span>
+                            >
+                              <button
+                                type="button"
+                                className={`lesson-watched-toggle${isWatched ? " watched" : ""}`}
+                                aria-pressed={isWatched}
+                                aria-label={isWatched ? "Mark lesson as not watched" : "Mark lesson as watched"}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  toggleWatched(key);
+                                }}
+                              />
+                              <span className={`curriculum-item-kind ${item.itemType}`}>
+                                <ItemKindIcon type={item.itemType} />
+                              </span>
+                              <span className="lesson-label">{item.label}</span>
+                              {!item.bunnyVideoId && <span className="upcoming-badge">Upcoming</span>}
+                              {item.durationLabel && (
+                                <span className="lesson-duration">{item.durationLabel}</span>
+                              )}
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  className="add-task-btn"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setAddTaskStatus(null);
+                                    setAddTaskFor(key);
+                                  }}
+                                >
+                                  + Add task
+                                </button>
+                              )}
+                            </div>
+                            {lessonTasks.length > 0 && (
+                              <div className="lesson-tasks">
+                                {lessonTasks.map((task) => {
+                                  const completion = completions.get(task.id);
+                                  return (
+                                    <div key={task.id} className="lesson-task-row">
+                                      <a
+                                        className="lesson-task-link"
+                                        href={task.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <TaskIcon />
+                                        <span>{task.name}</span>
+                                      </a>
+                                      <button
+                                        type="button"
+                                        className={`task-complete-btn${completion ? " completed" : ""}`}
+                                        onClick={() => (completion ? handleUnmarkTask(task.id) : setCompletingTask(task))}
+                                      >
+                                        {completion ? "Completed" : "Mark as completed"}
+                                      </button>
+                                      {isAdmin && (
+                                        <button
+                                          type="button"
+                                          className="task-delete-btn"
+                                          aria-label="Remove task"
+                                          onClick={() => handleDeleteTask(task.id)}
+                                        >
+                                          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M18 6 6 18" />
+                                            <path d="m6 6 12 12" />
+                                          </svg>
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             )}
                           </div>
                         );
@@ -405,6 +708,26 @@ export default function TrainingPage() {
           </div>
         </div>
       </div>
+
+      {addTaskFor && (
+        <AddTaskModal
+          lessonLabel={lessonLabels.get(addTaskFor) ?? "this lesson"}
+          busy={addTaskBusy}
+          status={addTaskStatus}
+          onSubmit={handleAddTask}
+          onClose={() => setAddTaskFor(null)}
+        />
+      )}
+
+      {completingTask && (
+        <CompleteTaskModal
+          task={completingTask}
+          busy={completeBusy}
+          status={completeStatus}
+          onSubmit={handleCompleteTask}
+          onClose={() => setCompletingTask(null)}
+        />
+      )}
     </main>
   );
 }

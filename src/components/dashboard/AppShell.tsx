@@ -8,6 +8,7 @@ import { navItems, pageMeta } from "@/lib/pageMeta";
 import { useAuth } from "@/lib/auth-context";
 import { countAllLessons } from "@/lib/curriculum";
 import { getTrainingProgress } from "@/lib/progress";
+import { fetchAllTasks, fetchTaskCompletions } from "@/lib/tasks";
 
 const EVENT_TARGET = new Date("2026-10-24T00:00:00+04:00");
 const TOTAL_LESSONS = countAllLessons();
@@ -66,6 +67,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [countdown, setCountdown] = useState("-- days left");
   const [completedCount, setCompletedCount] = useState(0);
+  const [tasksTotal, setTasksTotal] = useState(0);
+  const [tasksCompleted, setTasksCompleted] = useState(0);
 
   useEffect(() => {
     const update = () => {
@@ -97,8 +100,34 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [user, pathname]);
 
+  // Same refetch-on-navigation approach for task completion.
+  useEffect(() => {
+    if (!user) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setTasksTotal(0);
+      setTasksCompleted(0);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
+    let cancelled = false;
+    Promise.all([fetchAllTasks(), fetchTaskCompletions(user.uid)])
+      .then(([allTasks, completions]) => {
+        if (cancelled) return;
+        setTasksTotal(allTasks.length);
+        setTasksCompleted(completions.size);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, pathname]);
+
   const completionPercent = TOTAL_LESSONS
     ? Math.round((Math.min(completedCount, TOTAL_LESSONS) / TOTAL_LESSONS) * 100)
+    : 0;
+
+  const taskCompletionPercent = tasksTotal
+    ? Math.round((Math.min(tasksCompleted, tasksTotal) / tasksTotal) * 100)
     : 0;
 
   return (
@@ -234,6 +263,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="pgtop-stats">
+              {tasksTotal > 0 && (
+                <>
+                  <div className="pgtop-stat pgtop-stat-completion">
+                    <CompletionRing percent={taskCompletionPercent} />
+                    <div>
+                      <span className="pgtop-stat-value">{taskCompletionPercent}%</span>
+                      <span className="pgtop-stat-label">{tasksCompleted}/{tasksTotal} tasks completed</span>
+                    </div>
+                  </div>
+                  <div className="pgtop-divider" aria-hidden="true" />
+                </>
+              )}
               <div className="pgtop-stat pgtop-stat-completion">
                 <CompletionRing percent={completionPercent} />
                 <div>

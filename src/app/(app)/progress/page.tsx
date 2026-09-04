@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { fetchStudents } from "@/lib/data";
 import { getTrainingProgressForUsers, type TrainingProgress } from "@/lib/progress";
+import { fetchAllTasks, fetchTaskCompletionsForUsers } from "@/lib/tasks";
 import { countAllLessons } from "@/lib/curriculum";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
@@ -15,6 +16,7 @@ type StudentRow = {
   progress: TrainingProgress | null;
   videosCompleted: number;
   percent: number;
+  tasksCompleted: number;
 };
 
 function formatLastActive(updatedAt?: number): string {
@@ -39,6 +41,7 @@ function StatCard({ label, value, sublabel }: { label: string; value: string; su
 function ProgressPageContent() {
   const { isAdmin, profile } = useAuth();
   const [rows, setRows] = useState<StudentRow[] | null>(null);
+  const [totalTasks, setTotalTasks] = useState(0);
   const [schoolFilter, setSchoolFilter] = useState("");
 
   useEffect(() => {
@@ -46,13 +49,23 @@ function ProgressPageContent() {
     let cancelled = false;
     fetchStudents(isAdmin ? {} : { school: profile?.school })
       .then(async (students) => {
-        const progressByUid = await getTrainingProgressForUsers(students.map((s) => s.uid));
+        const uids = students.map((s) => s.uid);
+        const [progressByUid, allTasks, completionsByUid] = await Promise.all([
+          getTrainingProgressForUsers(uids),
+          fetchAllTasks(),
+          fetchTaskCompletionsForUsers(uids),
+        ]);
         if (cancelled) return;
+        setTotalTasks(allTasks.length);
         const nextRows: StudentRow[] = students.map((student) => {
           const progress = progressByUid.get(student.uid) ?? null;
           const videosCompleted = Math.min(progress?.watchedKeys?.length ?? 0, TOTAL_LESSONS);
           const percent = TOTAL_LESSONS ? Math.round((videosCompleted / TOTAL_LESSONS) * 100) : 0;
-          return { student, progress, videosCompleted, percent };
+          const tasksCompleted = Math.min(
+            completionsByUid.get(student.uid)?.size ?? 0,
+            allTasks.length,
+          );
+          return { student, progress, videosCompleted, percent, tasksCompleted };
         });
         nextRows.sort((a, b) => b.percent - a.percent);
         setRows(nextRows);
@@ -87,8 +100,21 @@ function ProgressPageContent() {
       : 0;
     const notStarted = list.filter((r) => r.videosCompleted === 0).length;
     const completed = list.filter((r) => r.percent >= 100).length;
-    return { totalStudents, totalVideosCompleted, averagePercent, notStarted, completed };
-  }, [visibleRows]);
+    const totalTasksCompleted = list.reduce((sum, r) => sum + r.tasksCompleted, 0);
+    const averageTaskPercent =
+      totalStudents && totalTasks
+        ? Math.round(list.reduce((sum, r) => sum + (r.tasksCompleted / totalTasks) * 100, 0) / totalStudents)
+        : 0;
+    return {
+      totalStudents,
+      totalVideosCompleted,
+      averagePercent,
+      notStarted,
+      completed,
+      totalTasksCompleted,
+      averageTaskPercent,
+    };
+  }, [visibleRows, totalTasks]);
 
   return (
     <main id="progress" className="section active">
@@ -103,6 +129,16 @@ function ProgressPageContent() {
           />
           <StatCard label="Not started" value={String(stats.notStarted)} />
           <StatCard label="Fully completed" value={String(stats.completed)} />
+          {totalTasks > 0 && (
+            <>
+              <StatCard label="Average task completion" value={`${stats.averageTaskPercent}%`} />
+              <StatCard
+                label="Tasks completed"
+                value={String(stats.totalTasksCompleted)}
+                sublabel={`out of ${totalTasks} per student`}
+              />
+            </>
+          )}
         </section>
 
         <section className="profile-card glass">
@@ -141,6 +177,7 @@ function ProgressPageContent() {
                     <th>School</th>
                     <th>Completion</th>
                     <th>Videos completed</th>
+                    {totalTasks > 0 && <th>Tasks completed</th>}
                     <th>Last active</th>
                   </tr>
                 </thead>
@@ -158,6 +195,7 @@ function ProgressPageContent() {
                         </div>
                       </td>
                       <td>{row.videosCompleted}/{TOTAL_LESSONS}</td>
+                      {totalTasks > 0 && <td>{row.tasksCompleted}/{totalTasks}</td>}
                       <td>{formatLastActive(row.progress?.updatedAt)}</td>
                     </tr>
                   ))}
