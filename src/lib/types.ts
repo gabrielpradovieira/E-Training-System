@@ -20,4 +20,6 @@ export type UserProfile = {
    * Firestore rules that gate the rest of the profile gate this field.
    */
   password?: string;
+  /** True when this account must change its password before using the app (forced after a reset). */
+  mustChangePassword?: boolean;
 };

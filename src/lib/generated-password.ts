@@ -24,14 +24,13 @@ function capitalize(part: string): string {
 
 /**
  * Teacher passwords follow their own fixed scheme:
- * Firstname.Lastname@school.2026 -- name parts capitalized, e.g.
- * "sara ahmed" at "ATS Abu Dhabi - Girls" -> "Sara.Ahmed@atsabudhabigirls.2026".
- * Unlike students, a teacher can change this afterward from their own
- * account settings — this is only the password set at creation time.
+ * Firstname.Lastname -- name parts capitalized, e.g.
+ * "sara ahmed" -> "Sara.Ahmed". This is only the default password set at
+ * creation (or reset) time — a teacher must change it after first login.
  */
-export function generateTeacherPassword(fullName: string, school: string): string {
+export function generateTeacherPassword(fullName: string): string {
   const { firstName, lastName } = splitFullName(fullName);
-  return `${capitalize(firstName)}.${capitalize(lastName || firstName)}@${slug(school)}.2026`;
+  return `${capitalize(firstName)}.${capitalize(lastName || firstName)}`;
 }
 
 export function splitFullName(fullName: string): { firstName: string; lastName: string } {

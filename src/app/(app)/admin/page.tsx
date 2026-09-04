@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { createManagedUser, fetchTeachers, updateTeacher } from "@/lib/data";
+import { createManagedUser, fetchTeachers, resetTeacherPassword, updateTeacher } from "@/lib/data";
 import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
@@ -41,7 +41,7 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
     setBusy(true);
     try {
       const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
-      const password = generateTeacherPassword(displayName, school);
+      const password = generateTeacherPassword(displayName);
       await createManagedUser({
         displayName,
         email,
@@ -113,8 +113,8 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
         </div>
       </div>
       <p className="csv-hint">
-        Password is generated automatically: Firstname.Lastname@school.2026 — the teacher can change it afterward
-        from their own account settings.
+        Password is generated automatically: Firstname.Lastname — the teacher will be required to change it the
+        first time they sign in.
       </p>
       {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
       <button className="admin-submit-btn" type="submit" disabled={busy}>
@@ -216,6 +216,9 @@ function EditTeacherPanel({
 function AdminPageContent() {
   const [teachers, setTeachers] = useState<UserProfile[] | null>(null);
   const [editingUid, setEditingUid] = useState<string | null>(null);
+  const [resettingUid, setResettingUid] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   function reload() {
     fetchTeachers()
@@ -228,6 +231,48 @@ function AdminPageContent() {
   }, []);
 
   const editingTeacher = teachers?.find((t) => t.uid === editingUid) ?? null;
+
+  async function handleResetOne(teacher: UserProfile) {
+    setResettingUid(teacher.uid);
+    setBulkStatus(null);
+    try {
+      const newPassword = await resetTeacherPassword(teacher);
+      setBulkStatus({
+        kind: "success",
+        message: `${teacher.displayName}'s password reset to ${newPassword}. They must change it at next login.`,
+      });
+      reload();
+    } catch (err) {
+      setBulkStatus({ kind: "error", message: friendlyError(err) });
+    } finally {
+      setResettingUid(null);
+    }
+  }
+
+  async function handleResetAll() {
+    if (!teachers || teachers.length === 0) return;
+    setBulkBusy(true);
+    setBulkStatus(null);
+    try {
+      let failures = 0;
+      for (const teacher of teachers) {
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await resetTeacherPassword(teacher);
+        } catch {
+          failures += 1;
+        }
+      }
+      setBulkStatus(
+        failures === 0
+          ? { kind: "success", message: "All teacher passwords reset to Firstname.Lastname." }
+          : { kind: "error", message: `Reset finished with ${failures} failure(s). See individual rows to retry.` },
+      );
+      reload();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   return (
     <main id="admin" className="section active">
@@ -248,7 +293,17 @@ function AdminPageContent() {
               <h2>Teachers</h2>
               <p>Every teacher account in the system.</p>
             </div>
+            <button
+              type="button"
+              className="admin-secondary-btn"
+              onClick={handleResetAll}
+              disabled={bulkBusy || !teachers || teachers.length === 0}
+            >
+              {bulkBusy ? "Resetting…" : "Reset all passwords"}
+            </button>
           </div>
+
+          {bulkStatus && <div className={`admin-status ${bulkStatus.kind}`}>{bulkStatus.message}</div>}
 
           {editingTeacher && (
             <EditTeacherPanel
@@ -285,13 +340,23 @@ function AdminPageContent() {
                       <td>{teacher.school ?? "—"}</td>
                       <td><PasswordReveal password={teacher.password} /></td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-link-btn"
-                          onClick={() => setEditingUid(teacher.uid)}
-                        >
-                          Edit
-                        </button>
+                        <div className="admin-row-actions">
+                          <button
+                            type="button"
+                            className="admin-link-btn"
+                            onClick={() => setEditingUid(teacher.uid)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-link-btn"
+                            onClick={() => handleResetOne(teacher)}
+                            disabled={resettingUid === teacher.uid}
+                          >
+                            {resettingUid === teacher.uid ? "Resetting…" : "Reset password"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

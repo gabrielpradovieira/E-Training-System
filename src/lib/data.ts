@@ -14,6 +14,7 @@ import { collection, doc, getDoc, getDocs, limit, query, setDoc, where } from "f
 import { db } from "@/lib/firebase/client";
 import { getSecondaryAuth } from "@/lib/firebase/secondary";
 import { normalizeEmail } from "@/lib/email";
+import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile, UserRole } from "@/lib/types";
 
 /**
@@ -113,6 +114,7 @@ export async function createManagedUser(params: {
       createdBy: createdByUid,
       password,
       ...(school ? { school } : {}),
+      ...(role === "teacher" ? { mustChangePassword: true } : {}),
     };
     await setDoc(doc(db, "users", cred.user.uid), profile);
     return profile;
@@ -152,7 +154,32 @@ export async function changeOwnPassword(
   const credential = EmailAuthProvider.credential(user.email ?? "", currentPassword);
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
-  await setDoc(doc(db, "users", user.uid), { password: newPassword }, { merge: true });
+  await setDoc(
+    doc(db, "users", user.uid),
+    { password: newPassword, mustChangePassword: false },
+    { merge: true },
+  );
+}
+
+/**
+ * Resets a teacher's password back to the default Firstname.Lastname scheme
+ * and flags the account so they must change it again after their next login.
+ * Used by an admin to bring an already-created teacher onto the new scheme.
+ */
+export async function resetTeacherPassword(teacher: UserProfile): Promise<string> {
+  const newPassword = generateTeacherPassword(teacher.displayName);
+  if (!teacher.password) {
+    throw new Error("Can't reset this account's password — its current password isn't on file.");
+  }
+  if (newPassword !== teacher.password) {
+    await changeManagedUserPassword(teacher.email, teacher.password, newPassword);
+  }
+  await setDoc(
+    doc(db, "users", teacher.uid),
+    { password: newPassword, mustChangePassword: true },
+    { merge: true },
+  );
+  return newPassword;
 }
 
 /**
@@ -176,6 +203,7 @@ export async function updateTeacher(params: {
     }
     await changeManagedUserPassword(currentEmail, currentPassword, newPassword);
     patch.password = newPassword;
+    patch.mustChangePassword = true;
   }
 
   await setDoc(doc(db, "users", uid), patch, { merge: true });
