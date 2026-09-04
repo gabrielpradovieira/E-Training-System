@@ -20,6 +20,11 @@ export const pageMeta: Record<string, PageMeta> = {
     icon: "/assets/icon-sidebar-marking.svg",
     description: "Add students individually or in bulk via CSV.",
   },
+  progress: {
+    title: "Students Progress",
+    icon: "/assets/icon-sidebar-dashboard.svg",
+    description: "Track completion and video progress across your students.",
+  },
   admin: {
     title: "Manage Teachers",
     icon: "/assets/icon-sidebar-marking.svg",

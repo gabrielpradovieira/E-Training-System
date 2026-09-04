@@ -141,6 +141,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="link-text">Manage Students</span>
               </Link>
             )}
+            {(isTeacher || isAdmin) && (
+              <Link
+                href="/progress"
+                className={`menu-link${slug === "progress" ? " active" : ""}`}
+              >
+                <img
+                  className="link-icon sidebar-vector-icon"
+                  src="/assets/icon-sidebar-dashboard.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span className="link-text">Students Progress</span>
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 href="/admin"

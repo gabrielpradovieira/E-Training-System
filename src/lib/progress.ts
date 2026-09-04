@@ -29,3 +29,11 @@ export async function saveTrainingProgress(uid: string, level: CurriculumLevel, 
 export async function saveWatchedLessons(uid: string, watchedKeys: string[]): Promise<void> {
   await setDoc(progressRef(uid), { watchedKeys, updatedAt: Date.now() }, { merge: true });
 }
+
+/** Training progress for many users at once, keyed by uid (missing/never-started -> null). */
+export async function getTrainingProgressForUsers(uids: string[]): Promise<Map<string, TrainingProgress | null>> {
+  const entries = await Promise.all(
+    uids.map(async (uid) => [uid, await getTrainingProgress(uid).catch(() => null)] as const),
+  );
+  return new Map(entries);
+}

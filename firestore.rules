@@ -106,7 +106,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /{sub=**} {
-        allow read, write: if isAdmin() || (request.auth.uid == uid && canUse());
+        // A teacher may also read (never write) a same-school student's
+        // subcollections — this is how "Students Progress" reads each
+        // student's saved training-progress doc.
+        allow read:  if isAdmin()
+                     || (request.auth.uid == uid && canUse())
+                     || (isTeacher()
+                         && get(/databases/$(database)/documents/users/$(uid)).data.role == 'student'
+                         && get(/databases/$(database)/documents/users/$(uid)).data.school == ownProfile().school);
+        allow write: if isAdmin() || (request.auth.uid == uid && canUse());
       }
     }
 

@@ -4641,6 +4641,68 @@
       padding: 10px 0;
     }
 
+    .progress-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+    }
+
+    .progress-stat-card {
+      border-radius: 16px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .progress-stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .progress-stat-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .progress-stat-sublabel {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .progress-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 140px;
+    }
+
+    .progress-bar-track {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--progress-track);
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--blue);
+      transition: width 0.3s ease;
+    }
+
+    .progress-cell-value {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 34px;
+      text-align: right;
+    }
+
     .admin-field-hint {
       text-transform: none;
       font-weight: 400;
