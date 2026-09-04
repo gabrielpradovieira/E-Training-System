@@ -21,10 +21,42 @@
 }
 
 .auth-logo {
-  display: block;
-  height: 40px;
-  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
   margin: 0 auto 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2680c2, #1e5a8e);
+  color: #fff;
+}
+
+.auth-logo svg {
+  width: 30px;
+  height: 30px;
+}
+
+.auth-forgot-link {
+  display: block;
+  margin: 16px auto 0;
+  border: none;
+  background: transparent;
+  color: #7cc0f0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.auth-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.auth-forgot-box {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .auth-title {

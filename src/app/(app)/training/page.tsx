@@ -118,7 +118,7 @@ function CompleteTaskModal({
   const [link, setLink] = useState("");
 
   return (
-    <Modal title={`Mark "${task.name}" as completed`} onClose={onClose}>
+    <Modal title={`Submit "${task.name}"`} onClose={onClose}>
       <form
         className="admin-form"
         onSubmit={(event) => {
@@ -137,10 +137,10 @@ function CompleteTaskModal({
             placeholder="https://onedrive.live.com/..."
           />
         </div>
-        <p className="csv-hint">A link to your OneDrive submission is required to mark this task as completed.</p>
+        <p className="csv-hint">A link to your OneDrive submission is required to submit this task.</p>
         {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
         <button className="admin-submit-btn" type="submit" disabled={busy}>
-          {busy ? "Saving…" : "Mark as completed"}
+          {busy ? "Submitting…" : "Submit"}
         </button>
       </form>
     </Modal>
@@ -663,6 +663,13 @@ export default function TrainingPage() {
                                   const completion = completions.get(task.id);
                                   return (
                                     <div key={task.id} className="lesson-task-row">
+                                      <button
+                                        type="button"
+                                        className={`lesson-watched-toggle task-toggle${completion ? " watched" : ""}`}
+                                        aria-pressed={!!completion}
+                                        aria-label={completion ? "Unmark task as completed" : "Mark task as completed"}
+                                        onClick={() => (completion ? handleUnmarkTask(task.id) : setCompletingTask(task))}
+                                      />
                                       <a
                                         className="lesson-task-link"
                                         href={task.link}
@@ -677,7 +684,7 @@ export default function TrainingPage() {
                                         className={`task-complete-btn${completion ? " completed" : ""}`}
                                         onClick={() => (completion ? handleUnmarkTask(task.id) : setCompletingTask(task))}
                                       >
-                                        {completion ? "Completed" : "Mark as completed"}
+                                        {completion ? "Submitted" : "Submit"}
                                       </button>
                                       {isAdmin && (
                                         <button
