@@ -44,10 +44,21 @@ function ItemKindIcon({ type }: { type: CurriculumItemType }) {
 }
 
 function TaskKindIcon() {
+  // Same solid-disc structure as ItemKindIcon (the video icon) — a full
+  // currentColor circle behind a cutout glyph — so the two render with
+  // identical color coverage. Only the glyph (checkmark vs. play triangle)
+  // differs.
   return (
     <svg viewBox="0 0 512 512" aria-hidden="true" fill="currentColor">
-      <path d="M287 0H80a48 48 0 0 0-48 48v416a48 48 0 0 0 48 48h190.7A160 160 0 0 1 240 400c0-15.1 1.6-29.8 4.6-44H144a24 24 0 0 1 0-48h116.7A159.4 159.4 0 0 1 328 259.3V208a24 24 0 0 1-24-24v-72h-96a24 24 0 0 1-24-24V40h-.3a8 8 0 0 0-.1 1v103a41 41 0 0 0 41 41h103c.4 0 .7 0 1-.1V259c12.8-6.6 26.6-11.7 41-15.1V149.3c0-12.7-5-24.9-14-33.9L305 21a48 48 0 0 0-34-21ZM144 240h84.8a160.6 160.6 0 0 0-30 48H144a24 24 0 0 1 0-48Zm0-96h160a24 24 0 0 1 0 48H144a24 24 0 0 1 0-48Z" />
-      <path d="M400 256a144 144 0 1 0 0 288 144 144 0 0 0 0-288Zm79.6 105.6-88 96a24 24 0 0 1-34.9.7l-48-48a24 24 0 1 1 34-34l30.1 30.1 71.3-77.8a24 24 0 1 1 35.5 32.4Z" />
+      <circle cx="256" cy="256" r="256"></circle>
+      <path
+        d="M158 264.6 226.5 333 354 205.5"
+        fill="none"
+        stroke="var(--bg-1, #fff)"
+        strokeWidth="42"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></path>
     </svg>
   );
 }
