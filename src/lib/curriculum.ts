@@ -35,8 +35,24 @@ const BUNNY_VIDEO_IDS: Record<string, string> = {
   "Smudge Brush": "21e3d117-1efc-4b9b-9822-b164a5ffe6e8",
 };
 
-/** Known run times for uploaded videos, keyed by lesson label. Filled in as real durations are confirmed. */
-const DURATION_LABELS: Record<string, string> = {};
+/** Known run times (seconds) for uploaded videos, keyed by lesson label, pulled from the Bunny Stream API. */
+const DURATION_SECONDS: Record<string, number> = {
+  "Interface and menus": 932,
+  "Layers": 425,
+  "Brushes": 995,
+  "Lasso tool and transforms": 777,
+  "Hue, saturation and luminosity": 649,
+  "Opacity and flow": 670,
+  "Masks": 652,
+  "Liquify, blur and filters": 726,
+  "Smudge Brush": 333,
+};
+
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
 
 function section(id: string, title: string, subjects: string[]): CurriculumSection {
   return {
@@ -47,7 +63,7 @@ function section(id: string, title: string, subjects: string[]): CurriculumSecti
       label,
       initiallyWatched: false,
       bunnyVideoId: BUNNY_VIDEO_IDS[label],
-      durationLabel: DURATION_LABELS[label],
+      durationLabel: label in DURATION_SECONDS ? formatDuration(DURATION_SECONDS[label]) : undefined,
     })),
   };
 }
