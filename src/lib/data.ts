@@ -5,13 +5,14 @@ import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as fbSignOut,
   updatePassword,
   updateProfile,
 } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, limit, query, setDoc, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { auth, db } from "@/lib/firebase/client";
 import { getSecondaryAuth } from "@/lib/firebase/secondary";
 import { normalizeEmail } from "@/lib/email";
 import { generateTeacherPassword } from "@/lib/generated-password";
@@ -169,10 +170,24 @@ export async function changeOwnPassword(
 export async function resetTeacherPassword(teacher: UserProfile): Promise<string> {
   const newPassword = generateTeacherPassword(teacher.displayName);
   if (!teacher.password) {
-    throw new Error("Can't reset this account's password — its current password isn't on file.");
+    const e = new Error("No current password on file for this account — use \"Send reset email\" instead.");
+    (e as Error & { code?: string }).code = "no-password-on-file";
+    throw e;
   }
   if (newPassword !== teacher.password) {
-    await changeManagedUserPassword(teacher.email, teacher.password, newPassword);
+    try {
+      await changeManagedUserPassword(teacher.email, teacher.password, newPassword);
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        const e = new Error(
+          "The password on file doesn't match this account's real password anymore — use \"Send reset email\" instead.",
+        );
+        (e as Error & { code?: string }).code = "stale-password-on-file";
+        throw e;
+      }
+      throw err;
+    }
   }
   await setDoc(
     doc(db, "users", teacher.uid),
@@ -180,6 +195,18 @@ export async function resetTeacherPassword(teacher: UserProfile): Promise<string
     { merge: true },
   );
   return newPassword;
+}
+
+/**
+ * Sends a Firebase "reset your password" email to a managed account, for
+ * when its stored current password no longer matches the real one (so the
+ * secondary-auth sign-in used elsewhere can't work) — the only account
+ * recovery path available without an Admin SDK. Doesn't touch Firestore;
+ * the account's mustChangePassword flag stays as-is since the teacher will
+ * set their own password via the email link.
+ */
+export async function sendTeacherPasswordResetEmail(email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email);
 }
 
 /**

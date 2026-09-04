@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { createManagedUser, fetchTeachers, resetTeacherPassword, updateTeacher } from "@/lib/data";
+import {
+  createManagedUser,
+  fetchTeachers,
+  resetTeacherPassword,
+  sendTeacherPasswordResetEmail,
+  updateTeacher,
+} from "@/lib/data";
 import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
@@ -219,6 +225,7 @@ function AdminPageContent() {
   const [resettingUid, setResettingUid] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
 
   function reload() {
     fetchTeachers()
@@ -235,6 +242,11 @@ function AdminPageContent() {
   async function handleResetOne(teacher: UserProfile) {
     setResettingUid(teacher.uid);
     setBulkStatus(null);
+    setRowErrors((prev) => {
+      const next = { ...prev };
+      delete next[teacher.uid];
+      return next;
+    });
     try {
       const newPassword = await resetTeacherPassword(teacher);
       setBulkStatus({
@@ -243,7 +255,7 @@ function AdminPageContent() {
       });
       reload();
     } catch (err) {
-      setBulkStatus({ kind: "error", message: friendlyError(err) });
+      setRowErrors((prev) => ({ ...prev, [teacher.uid]: friendlyError(err) }));
     } finally {
       setResettingUid(null);
     }
@@ -253,23 +265,50 @@ function AdminPageContent() {
     if (!teachers || teachers.length === 0) return;
     setBulkBusy(true);
     setBulkStatus(null);
+    setRowErrors({});
     try {
-      let failures = 0;
+      const failures: Record<string, string> = {};
       for (const teacher of teachers) {
         try {
           await resetTeacherPassword(teacher);
-        } catch {
-          failures += 1;
+        } catch (err) {
+          failures[teacher.uid] = friendlyError(err);
         }
       }
+      const failureCount = Object.keys(failures).length;
+      setRowErrors(failures);
       setBulkStatus(
-        failures === 0
+        failureCount === 0
           ? { kind: "success", message: "All teacher passwords reset to Firstname.Lastname." }
-          : { kind: "error", message: `Reset finished with ${failures} failure(s). See individual rows to retry.` },
+          : {
+              kind: "error",
+              message: `Reset finished with ${failureCount} failure(s) — see the reason under each affected row below.`,
+            },
       );
       reload();
     } finally {
       setBulkBusy(false);
+    }
+  }
+
+  async function handleSendResetEmail(teacher: UserProfile) {
+    setResettingUid(teacher.uid);
+    setBulkStatus(null);
+    try {
+      await sendTeacherPasswordResetEmail(teacher.email);
+      setRowErrors((prev) => {
+        const next = { ...prev };
+        delete next[teacher.uid];
+        return next;
+      });
+      setBulkStatus({
+        kind: "success",
+        message: `Password reset email sent to ${teacher.email}.`,
+      });
+    } catch (err) {
+      setRowErrors((prev) => ({ ...prev, [teacher.uid]: friendlyError(err) }));
+    } finally {
+      setResettingUid(null);
     }
   }
 
@@ -355,7 +394,20 @@ function AdminPageContent() {
                           >
                             {resettingUid === teacher.uid ? "Resetting…" : "Reset password"}
                           </button>
+                          {rowErrors[teacher.uid] && (
+                            <button
+                              type="button"
+                              className="admin-link-btn"
+                              onClick={() => handleSendResetEmail(teacher)}
+                              disabled={resettingUid === teacher.uid}
+                            >
+                              Send reset email
+                            </button>
+                          )}
                         </div>
+                        {rowErrors[teacher.uid] && (
+                          <div className="admin-status error admin-row-error">{rowErrors[teacher.uid]}</div>
+                        )}
                       </td>
                     </tr>
                   ))}

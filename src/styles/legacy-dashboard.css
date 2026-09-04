@@ -4552,6 +4552,13 @@
       border: 1px solid rgba(220, 38, 38, 0.28);
     }
 
+    .admin-row-error {
+      margin-top: 6px;
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      max-width: 220px;
+    }
+
     .admin-divider {
       border: none;
       border-top: 1px solid var(--line);
