@@ -863,19 +863,29 @@
       white-space: nowrap;
     }
 
-    .detail-item::before {
-      content: "";
+    .lesson-watched-toggle {
+      appearance: none;
+      -webkit-appearance: none;
+      margin: 0;
+      padding: 0;
+      font: inherit;
       width: 16px;
       height: 16px;
       border-radius: 50%;
       border: 1.7px solid rgba(144, 159, 191, 0.9);
-      background: transparent;
+      background-color: transparent;
       flex-shrink: 0;
       box-sizing: border-box;
+      cursor: pointer;
       transition: all 0.2s ease;
     }
 
-    .detail-item.watched::before {
+    .lesson-watched-toggle:hover {
+      border-color: var(--blue);
+      transform: scale(1.08);
+    }
+
+    .lesson-watched-toggle.watched {
       border-color: var(--blue);
       background-color: var(--blue);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.4l2.1 2.1L12 4.8' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -890,11 +900,6 @@
       border-left-color: var(--blue);
       color: var(--text);
       padding-left: 44px;
-    }
-
-    .detail-item:hover::before {
-      border-color: var(--blue);
-      transform: scale(1.04);
     }
 
     /* Left Column - Video Player */
@@ -943,6 +948,7 @@
     }
 
     .play-icon {
+      --bg-1: #ffffff;
       width: 80px;
       height: 80px;
       background: rgba(255, 255, 255, 0.15);
@@ -960,6 +966,12 @@
     .play-icon:hover {
       background: rgba(255, 255, 255, 0.25);
       transform: scale(1.05);
+    }
+
+    .play-icon svg {
+      width: 36px;
+      height: 36px;
+      color: var(--nav-1);
     }
 
     .video-placeholder p {

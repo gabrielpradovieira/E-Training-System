@@ -7,6 +7,7 @@ import type { CurriculumLevel } from "@/lib/curriculum";
 export type TrainingProgress = {
   level: CurriculumLevel;
   lessonKey: string;
+  watchedKeys?: string[];
   updatedAt: number;
 };
 
@@ -19,6 +20,12 @@ export async function getTrainingProgress(uid: string): Promise<TrainingProgress
   return snap.exists() ? (snap.data() as TrainingProgress) : null;
 }
 
+/** Records which lesson the student is currently on (for resuming later). */
 export async function saveTrainingProgress(uid: string, level: CurriculumLevel, lessonKey: string): Promise<void> {
-  await setDoc(progressRef(uid), { level, lessonKey, updatedAt: Date.now() });
+  await setDoc(progressRef(uid), { level, lessonKey, updatedAt: Date.now() }, { merge: true });
+}
+
+/** Records the full set of lessons the student has explicitly marked as watched. */
+export async function saveWatchedLessons(uid: string, watchedKeys: string[]): Promise<void> {
+  await setDoc(progressRef(uid), { watchedKeys, updatedAt: Date.now() }, { merge: true });
 }

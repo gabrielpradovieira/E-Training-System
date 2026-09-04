@@ -9,7 +9,11 @@ import {
 } from "@/lib/curriculum";
 import { bunnyEmbedUrl } from "@/lib/bunny";
 import { useAuth } from "@/lib/auth-context";
-import { getTrainingProgress, saveTrainingProgress } from "@/lib/progress";
+import { getTrainingProgress, saveTrainingProgress, saveWatchedLessons } from "@/lib/progress";
+
+const FIRST_LEVEL: CurriculumLevel = "concept-art";
+const FIRST_TOPIC_ID = "concept-art-tools";
+const FIRST_LESSON_KEY = "concept-art-tools-0";
 
 const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = (
   Object.keys(curriculumLevelLabels) as CurriculumLevel[]
@@ -30,24 +34,36 @@ function ItemKindIcon({ type }: { type: CurriculumItemType }) {
 
 export default function TrainingPage() {
   const { user } = useAuth();
-  const [activeLevel, setActiveLevel] = useState<CurriculumLevel>("concept-art");
+  const [activeLevel, setActiveLevel] = useState<CurriculumLevel>(FIRST_LEVEL);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [watched, setWatched] = useState<Set<string>>(new Set());
   const [currentLessonKey, setCurrentLessonKey] = useState<string | null>(null);
   const [progressLoaded, setProgressLoaded] = useState(false);
 
-  // Resume where the student left off, once per sign-in.
+  // Resume where the student left off, once per sign-in — or, for a brand new
+  // student with no saved progress yet, open the very first lesson.
   useEffect(() => {
     if (!user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setActiveLevel(FIRST_LEVEL);
+      setOpenTopics(new Set([FIRST_TOPIC_ID]));
+      setCurrentLessonKey(FIRST_LESSON_KEY);
       setProgressLoaded(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
       return;
     }
     let cancelled = false;
     setProgressLoaded(false);
     getTrainingProgress(user.uid)
       .then((progress) => {
-        if (cancelled || !progress) return;
+        if (cancelled) return;
+        if (!progress) {
+          setActiveLevel(FIRST_LEVEL);
+          setOpenTopics(new Set([FIRST_TOPIC_ID]));
+          setCurrentLessonKey(FIRST_LESSON_KEY);
+          return;
+        }
+        setWatched(new Set(progress.watchedKeys ?? []));
         const sectionsForLevel = buildCurriculumForLevel(progress.level);
         let sectionId: string | null = null;
         sectionsForLevel.forEach((sectionEntry) => {
@@ -55,9 +71,8 @@ export default function TrainingPage() {
             if (`${sectionEntry.id}-${index}` === progress.lessonKey) sectionId = sectionEntry.id;
           });
         });
-        if (!sectionId) return;
         setActiveLevel(progress.level);
-        setOpenTopics(new Set([sectionId]));
+        if (sectionId) setOpenTopics(new Set([sectionId]));
         setCurrentLessonKey(progress.lessonKey);
       })
       .catch(() => {})
@@ -124,27 +139,29 @@ export default function TrainingPage() {
     });
   }
 
-  function selectLesson(key: string) {
-    setWatched((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  /** Loads a lesson into the player. Does not affect its watched state. */
+  function playLesson(key: string) {
     setCurrentLessonKey(key);
     if (user && progressLoaded) {
       saveTrainingProgress(user.uid, activeLevel, key).catch(() => {});
     }
   }
 
+  /** Marks (or unmarks) a lesson as watched, independent of which lesson is playing. */
+  function toggleWatched(key: string) {
+    const next = new Set(watched);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setWatched(next);
+    if (user && progressLoaded) {
+      saveWatchedLessons(user.uid, Array.from(next)).catch(() => {});
+    }
+  }
+
   function selectByOffset(offset: number) {
     if (!lessonKeys.length) return;
     const nextIndex = currentIndex < 0 ? 0 : Math.min(Math.max(currentIndex + offset, 0), lessonKeys.length - 1);
-    const key = lessonKeys[nextIndex];
-    setCurrentLessonKey(key);
-    if (user && progressLoaded) {
-      saveTrainingProgress(user.uid, activeLevel, key).catch(() => {});
-    }
+    playLesson(lessonKeys[nextIndex]);
   }
 
   return (
@@ -167,12 +184,10 @@ export default function TrainingPage() {
                   />
                 ) : (
                   <div className="video-placeholder">
-                    <div className="play-icon">&#9658;</div>
-                    <p>
-                      {currentLessonKey
-                        ? "This lesson's video hasn't been uploaded yet."
-                        : "Select a lesson to start learning"}
-                    </p>
+                    <div className="play-icon">
+                      <ItemKindIcon type="video" />
+                    </div>
+                    <p>This lesson&apos;s video hasn&apos;t been uploaded yet.</p>
                   </div>
                 )}
               </div>
@@ -331,15 +346,24 @@ export default function TrainingPage() {
                             className={className}
                             role="button"
                             tabIndex={0}
-                            aria-pressed={isWatched}
-                            onClick={() => selectLesson(key)}
+                            onClick={() => playLesson(key)}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
-                                selectLesson(key);
+                                playLesson(key);
                               }
                             }}
                           >
+                            <button
+                              type="button"
+                              className={`lesson-watched-toggle${isWatched ? " watched" : ""}`}
+                              aria-pressed={isWatched}
+                              aria-label={isWatched ? "Mark lesson as not watched" : "Mark lesson as watched"}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleWatched(key);
+                              }}
+                            />
                             <span className={`curriculum-item-kind ${item.itemType}`}>
                               <ItemKindIcon type={item.itemType} />
                             </span>
