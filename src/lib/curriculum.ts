@@ -48,6 +48,10 @@ const BUNNY_VIDEO_IDS: Record<string, string> = {
   "Anatomy: Feet": "217da5fd-c75c-44c2-b2b0-8e15b228826b",
   "Animals anatomy": "3c972f5c-97a8-46d7-a840-b224cd120486",
 
+  // 3D fundamentals
+  // Uploaded as "26 what is 3d modelling.mp4" — confirmed match.
+  "Polygons, triangles and topology": "01dd2253-0dee-4fc4-ab59-128233880b74",
+
   // Maya interface
   "Introduction to the Maya interface": "bc572ac9-234f-4311-b133-01260e8ae5f5",
   // Uploaded as "02 Modelling Basic Tools" — matched to this lesson by content, not an exact title match.
