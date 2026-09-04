@@ -115,6 +115,23 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Legacy/unused-by-current-code collections, kept from the prior rules
+    // as-is (nothing in the app reads or writes these right now).
+    match /cores/{coreId} {
+      allow read:  if canUse();
+      allow write: if isAdmin();
+    }
+
+    match /sections/{sectionId} {
+      allow read:  if canUse();
+      allow write: if isAdmin();
+    }
+
+    match /videos/{videoId} {
+      allow read:  if canUse();
+      allow write: if isAdmin();
+    }
+
     // Default deny.
     match /{document=**} {
       allow read, write: if false;
