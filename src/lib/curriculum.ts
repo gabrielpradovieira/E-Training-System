@@ -193,3 +193,18 @@ export function countAllLessons(): number {
     0,
   );
 }
+
+export type LessonInfo = { label: string; sectionTitle: string; level: CurriculumLevel };
+
+/** Lesson label/section lookup by key, across every level — for displaying a task's lesson context. */
+export function buildLessonInfoMap(): Map<string, LessonInfo> {
+  const map = new Map<string, LessonInfo>();
+  (Object.keys(curriculum) as CurriculumLevel[]).forEach((level) => {
+    curriculum[level].forEach((section) => {
+      section.items.forEach((item, index) => {
+        map.set(`${section.id}-${index}`, { label: item.label, sectionTitle: section.title, level });
+      });
+    });
+  });
+  return map;
+}

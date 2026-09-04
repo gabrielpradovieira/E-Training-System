@@ -307,3 +307,10 @@ export async function fetchStudents(scope: { school?: string }): Promise<UserPro
   const snap = await getDocs(query(collection(db, "users"), ...constraints));
   return snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<UserProfile, "uid">) }));
 }
+
+/** A single student's profile (admin, or their own teacher — per security rules). */
+export async function fetchStudentProfile(uid: string): Promise<UserProfile | null> {
+  const snap = await getDoc(doc(db, "users", uid));
+  if (!snap.exists()) return null;
+  return { uid: snap.id, ...(snap.data() as Omit<UserProfile, "uid">) };
+}

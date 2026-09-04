@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { fetchStudents } from "@/lib/data";
 import { getTrainingProgressForUsers, type TrainingProgress } from "@/lib/progress";
@@ -179,6 +180,7 @@ function ProgressPageContent() {
                     <th>Videos completed</th>
                     {totalTasks > 0 && <th>Tasks completed</th>}
                     <th>Last active</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,6 +199,11 @@ function ProgressPageContent() {
                       <td>{row.videosCompleted}/{TOTAL_LESSONS}</td>
                       {totalTasks > 0 && <td>{row.tasksCompleted}/{totalTasks}</td>}
                       <td>{formatLastActive(row.progress?.updatedAt)}</td>
+                      <td>
+                        <Link href={`/progress/${row.student.uid}`} className="admin-link-btn">
+                          View tasks
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
