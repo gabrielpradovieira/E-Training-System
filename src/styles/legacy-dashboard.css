@@ -525,33 +525,34 @@
     .curriculum-cu-topic .accordion-btn {
       align-items: flex-start;
       font-weight: 400;
-      background: #a2b2d0;
-      color: #313c4f;
-      border-left: 4px solid #4b6d94;
+      background: linear-gradient(135deg, var(--card-inner), var(--panel));
+      color: var(--text);
+      border-left: 4px solid var(--blue);
     }
 
     .curriculum-cu-topic .accordion-btn:hover,
     .curriculum-cu-topic .accordion-btn.active {
-      background: #cdd9ef;
-      color: #313c4f;
+      background: linear-gradient(135deg, var(--nav-1), var(--nav-2));
+      color: #fff;
+      border-left-color: var(--nav-1);
     }
 
     .curriculum-cu-topic .accordion-btn:hover .curriculum-cu-code,
     .curriculum-cu-topic .accordion-btn.active .curriculum-cu-code {
-      background: rgba(49, 60, 79, 0.12);
-      color: #313c4f;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
     }
 
     .curriculum-cu-topic .accordion-btn:hover .topic-progress-count,
     .curriculum-cu-topic .accordion-btn.active .topic-progress-count,
     .curriculum-cu-topic .accordion-btn:hover .topic-task-count,
     .curriculum-cu-topic .accordion-btn.active .topic-task-count {
-      color: rgba(49, 60, 79, 0.75);
+      color: rgba(255, 255, 255, 0.8);
     }
 
     .curriculum-cu-topic .accordion-btn:hover .accordion-arrow,
     .curriculum-cu-topic .accordion-btn.active .accordion-arrow {
-      color: #313c4f;
+      color: #fff;
     }
 
     .curriculum-cu-topic .topic-title {
@@ -667,13 +668,13 @@
     }
 
     .accordion-btn:hover {
-      background: #cdd9ef;
-      color: #313c4f;
+      background: linear-gradient(135deg, var(--nav-1), var(--nav-2));
+      color: #fff;
     }
 
     .accordion-btn.active {
-      background: #cdd9ef;
-      color: #313c4f;
+      background: linear-gradient(135deg, var(--nav-1), var(--nav-2));
+      color: #fff;
     }
 
     .topic-icon {
@@ -825,8 +826,8 @@
     .detail-item {
       padding: 10px 18px 10px 40px;
       font-size: 0.88rem;
-      color: #313c4f;
-      background: #cdd9ef;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--card-inner), var(--panel));
       border-left: 3px solid transparent;
       transition: all 0.2s ease;
       cursor: pointer;
@@ -916,14 +917,16 @@
     }
 
     .detail-item:hover {
-      background: #6092a6;
-      border-left-color: #6092a6;
-      color: #fff;
+      background: linear-gradient(135deg, rgba(38, 128, 194, 0.14), rgba(38, 128, 194, 0.04));
+      border-left-color: var(--blue);
+      color: var(--text);
       padding-left: 44px;
     }
 
-    .detail-item:hover .lesson-duration {
-      color: rgba(255, 255, 255, 0.85);
+    .detail-item.current {
+      background: linear-gradient(135deg, rgba(38, 128, 194, 0.24), rgba(38, 128, 194, 0.08));
+      border-left-color: var(--blue);
+      color: var(--text);
     }
 
     .topic-task-count {
