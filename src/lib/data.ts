@@ -3,6 +3,8 @@
 import type { User } from "firebase/auth";
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signOut as fbSignOut,
   updatePassword,
@@ -135,6 +137,22 @@ async function changeManagedUserPassword(email: string, oldPassword: string, new
   } finally {
     await fbSignOut(secondaryAuth).catch(() => {});
   }
+}
+
+/**
+ * Lets a signed-in user (teacher or admin) change their own password from
+ * their account settings. Firebase requires a recent sign-in for this, so
+ * it re-authenticates with the current password first.
+ */
+export async function changeOwnPassword(
+  user: User,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const credential = EmailAuthProvider.credential(user.email ?? "", currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
+  await setDoc(doc(db, "users", user.uid), { password: newPassword }, { merge: true });
 }
 
 /**

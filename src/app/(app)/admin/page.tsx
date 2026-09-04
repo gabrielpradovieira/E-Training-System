@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createManagedUser, fetchTeachers, updateTeacher } from "@/lib/data";
+import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
 import PasswordReveal from "@/components/dashboard/PasswordReveal";
@@ -30,7 +31,6 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [school, setSchool] = useState("");
-  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
@@ -41,21 +41,24 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
     setBusy(true);
     try {
       const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      const password = generateTeacherPassword(displayName, school);
       await createManagedUser({
         displayName,
         email,
         password,
         role: "teacher",
-        school: school.trim() || undefined,
+        school: school.trim(),
         createdByUid: user.uid,
       });
       onCreated();
-      setStatus({ kind: "success", message: `Teacher account created for ${displayName}.` });
+      setStatus({
+        kind: "success",
+        message: `Teacher account created for ${displayName}. Password: ${password} (they can change it later in their own account settings).`,
+      });
       setFirstName("");
       setLastName("");
       setEmail("");
       setSchool("");
-      setPassword("");
     } catch (err) {
       setStatus({ kind: "error", message: friendlyError(err) });
     } finally {
@@ -103,23 +106,16 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
           <input
             id="teacher-school"
             type="text"
+            required
             value={school}
             onChange={(e) => setSchool(e.target.value)}
           />
         </div>
-        <div className="admin-field">
-          <label htmlFor="teacher-password">Password</label>
-          <input
-            id="teacher-password"
-            type="text"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Set the teacher's password"
-          />
-        </div>
       </div>
+      <p className="csv-hint">
+        Password is generated automatically: Firstname.Lastname@school.2026 — the teacher can change it afterward
+        from their own account settings.
+      </p>
       {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
       <button className="admin-submit-btn" type="submit" disabled={busy}>
         {busy ? "Creating…" : "Create teacher account"}
