@@ -1,0 +1,41 @@
+name: Sync Bunny video durations
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Every Monday at 06:00 UTC — catches any videos uploaded during the week.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch durations from Bunny Stream
+        id: sync
+        env:
+          BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        run: node scripts/sync-bunny-durations.mjs
+
+      - name: Open a PR with any changes
+        if: steps.sync.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Sync Bunny video durations"
+          title: "Sync Bunny video durations"
+          body: |
+            Automated update from the weekly Bunny Stream duration sync.
+
+            Regenerated `src/lib/bunny-durations.json` from the current
+            state of the Bunny Stream library.
+          branch: automated/bunny-durations
+          delete-branch: true

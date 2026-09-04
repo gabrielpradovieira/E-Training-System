@@ -1,3 +1,5 @@
+import bunnyDurations from "./bunny-durations.json";
+
 export type CurriculumLevel = "concept-art" | "3d-modeling";
 
 export const curriculumLevelLabels: Record<CurriculumLevel, string> = {
@@ -35,18 +37,8 @@ const BUNNY_VIDEO_IDS: Record<string, string> = {
   "Smudge Brush": "21e3d117-1efc-4b9b-9822-b164a5ffe6e8",
 };
 
-/** Known run times (seconds) for uploaded videos, keyed by lesson label, pulled from the Bunny Stream API. */
-const DURATION_SECONDS: Record<string, number> = {
-  "Interface and menus": 932,
-  "Layers": 425,
-  "Brushes": 995,
-  "Lasso tool and transforms": 777,
-  "Hue, saturation and luminosity": 649,
-  "Opacity and flow": 670,
-  "Masks": 652,
-  "Liquify, blur and filters": 726,
-  "Smudge Brush": 333,
-};
+/** Known run times (seconds) for uploaded videos, keyed by Bunny video GUID. Kept in sync by scripts/sync-bunny-durations.mjs. */
+const DURATION_SECONDS: Record<string, number> = bunnyDurations;
 
 function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
@@ -58,13 +50,17 @@ function section(id: string, title: string, subjects: string[]): CurriculumSecti
   return {
     id,
     title,
-    items: subjects.map((label) => ({
-      itemType: "video",
-      label,
-      initiallyWatched: false,
-      bunnyVideoId: BUNNY_VIDEO_IDS[label],
-      durationLabel: label in DURATION_SECONDS ? formatDuration(DURATION_SECONDS[label]) : undefined,
-    })),
+    items: subjects.map((label) => {
+      const bunnyVideoId = BUNNY_VIDEO_IDS[label];
+      const seconds = bunnyVideoId ? DURATION_SECONDS[bunnyVideoId] : undefined;
+      return {
+        itemType: "video",
+        label,
+        initiallyWatched: false,
+        bunnyVideoId,
+        durationLabel: seconds !== undefined ? formatDuration(seconds) : undefined,
+      };
+    }),
   };
 }
 
