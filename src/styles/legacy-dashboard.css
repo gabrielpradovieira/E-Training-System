@@ -834,6 +834,26 @@
       text-align: right;
     }
 
+    .upcoming-badge {
+      margin-left: auto;
+      flex-shrink: 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.14);
+      color: #b45309;
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+
+    body.dark-mode .upcoming-badge {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+    }
+
     .topic-progress-count {
       flex-shrink: 0;
       color: var(--muted);

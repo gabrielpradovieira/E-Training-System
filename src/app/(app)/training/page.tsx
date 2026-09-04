@@ -344,6 +344,7 @@ export default function TrainingPage() {
                               <ItemKindIcon type={item.itemType} />
                             </span>
                             <span className="lesson-label">{item.label}</span>
+                            {!item.bunnyVideoId && <span className="upcoming-badge">Upcoming</span>}
                             {item.durationLabel && (
                               <span className="lesson-duration">{item.durationLabel}</span>
                             )}
