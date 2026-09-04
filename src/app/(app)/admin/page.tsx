@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   createManagedUser,
+  deleteTeacher,
   fetchTeachers,
   resetTeacherPassword,
   sendTeacherPasswordResetEmail,
@@ -226,6 +227,7 @@ function AdminPageContent() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
 
   function reload() {
     fetchTeachers()
@@ -288,6 +290,30 @@ function AdminPageContent() {
       reload();
     } finally {
       setBulkBusy(false);
+    }
+  }
+
+  async function handleDelete(teacher: UserProfile) {
+    const confirmed = window.confirm(
+      `Delete ${teacher.displayName}'s teacher account? This can't be undone.`,
+    );
+    if (!confirmed) return;
+    setDeletingUid(teacher.uid);
+    setBulkStatus(null);
+    try {
+      const { authDeleted } = await deleteTeacher(teacher);
+      if (editingUid === teacher.uid) setEditingUid(null);
+      setBulkStatus({
+        kind: "success",
+        message: authDeleted
+          ? `${teacher.displayName} was deleted.`
+          : `${teacher.displayName}'s account was removed from the system, but its sign-in couldn't be removed automatically (stale password on file) — remove it by hand in Firebase Console → Authentication if it must be fully gone.`,
+      });
+      reload();
+    } catch (err) {
+      setRowErrors((prev) => ({ ...prev, [teacher.uid]: friendlyError(err) }));
+    } finally {
+      setDeletingUid(null);
     }
   }
 
@@ -404,6 +430,14 @@ function AdminPageContent() {
                               Send reset email
                             </button>
                           )}
+                          <button
+                            type="button"
+                            className="admin-link-btn admin-link-btn-danger"
+                            onClick={() => handleDelete(teacher)}
+                            disabled={deletingUid === teacher.uid}
+                          >
+                            {deletingUid === teacher.uid ? "Deleting…" : "Delete"}
+                          </button>
                         </div>
                         {rowErrors[teacher.uid] && (
                           <div className="admin-status error admin-row-error">{rowErrors[teacher.uid]}</div>

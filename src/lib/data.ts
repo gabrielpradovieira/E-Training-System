@@ -3,6 +3,7 @@
 import type { User } from "firebase/auth";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   EmailAuthProvider,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
@@ -11,7 +12,7 @@ import {
   updatePassword,
   updateProfile,
 } from "firebase/auth";
-import { collection, doc, getDoc, getDocs, limit, query, setDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
 import { getSecondaryAuth } from "@/lib/firebase/secondary";
 import { normalizeEmail } from "@/lib/email";
@@ -260,6 +261,33 @@ export async function updateStudent(params: {
 
   await setDoc(doc(db, "users", uid), patch, { merge: true });
   return { password: patch.password as string | undefined };
+}
+
+/**
+ * Deletes a teacher account: signs into it (using its current password on
+ * file) with the secondary auth instance to remove the real Firebase Auth
+ * account — a user can always delete their own account, which is the only
+ * account-deletion path available without an Admin SDK — then removes its
+ * Firestore profile. If the stored password no longer matches (or none is
+ * on file) the Auth account can't be removed this way; the profile is still
+ * deleted so the teacher immediately loses all access, but the orphaned
+ * Auth account itself will need removing by hand in the Firebase Console
+ * (Authentication tab) if it must be fully gone.
+ */
+export async function deleteTeacher(teacher: UserProfile): Promise<{ authDeleted: boolean }> {
+  let authDeleted = false;
+  if (teacher.password) {
+    const secondaryAuth = getSecondaryAuth();
+    try {
+      const cred = await signInWithEmailAndPassword(secondaryAuth, teacher.email, teacher.password);
+      await deleteUser(cred.user);
+      authDeleted = true;
+    } catch {
+      await fbSignOut(secondaryAuth).catch(() => {});
+    }
+  }
+  await deleteDoc(doc(db, "users", teacher.uid));
+  return { authDeleted };
 }
 
 /** All teacher accounts (admin only, per security rules). */
