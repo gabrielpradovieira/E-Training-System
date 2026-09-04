@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "etsystem-dev",
-      "runtimeExecutable": "C:/Users/LENOVO/AppData/Local/Microsoft/WinGet/Packages/Oven-sh.Bun_Microsoft.Winget.Source_8wekyb3d8bbwe/bun-windows-x64/bun.exe",
+      "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
