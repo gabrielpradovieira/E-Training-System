@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createManagedUser, fetchStudents, updateStudent } from "@/lib/data";
 import { generateStudentPassword } from "@/lib/generated-password";
@@ -300,6 +300,7 @@ function StudentsPageContent() {
   const { isAdmin, user, profile } = useAuth();
   const [students, setStudents] = useState<UserProfile[] | null>(null);
   const [editingUid, setEditingUid] = useState<string | null>(null);
+  const [schoolFilter, setSchoolFilter] = useState("");
 
   function reload() {
     if (!user) return;
@@ -315,6 +316,19 @@ function StudentsPageContent() {
   }, [user, isAdmin, profile?.school]);
 
   const editingStudent = students?.find((s) => s.uid === editingUid) ?? null;
+
+  const schoolOptions = useMemo(() => {
+    const schools = new Set<string>();
+    (students ?? []).forEach((s) => {
+      if (s.school) schools.add(s.school);
+    });
+    return Array.from(schools).sort((a, b) => a.localeCompare(b));
+  }, [students]);
+
+  const visibleStudents = useMemo(() => {
+    if (!schoolFilter) return students ?? [];
+    return (students ?? []).filter((s) => s.school === schoolFilter);
+  }, [students, schoolFilter]);
 
   return (
     <main id="students" className="section active">
@@ -338,6 +352,21 @@ function StudentsPageContent() {
               <h2>Students</h2>
               <p>{isAdmin ? "Every student in the system." : "Students at your school."}</p>
             </div>
+            {schoolOptions.length > 1 && (
+              <div className="admin-field admin-filter-field">
+                <label htmlFor="student-school-filter">Filter by school</label>
+                <select
+                  id="student-school-filter"
+                  value={schoolFilter}
+                  onChange={(e) => setSchoolFilter(e.target.value)}
+                >
+                  <option value="">All schools</option>
+                  {schoolOptions.map((school) => (
+                    <option key={school} value={school}>{school}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {editingStudent && (
@@ -356,6 +385,8 @@ function StudentsPageContent() {
               <p className="admin-empty">Loading…</p>
             ) : students.length === 0 ? (
               <p className="admin-empty">No students yet.</p>
+            ) : visibleStudents.length === 0 ? (
+              <p className="admin-empty">No students at this school.</p>
             ) : (
               <table className="admin-table">
                 <thead>
@@ -368,7 +399,7 @@ function StudentsPageContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map((student) => (
+                  {visibleStudents.map((student) => (
                     <tr key={student.uid}>
                       <td>{student.displayName}</td>
                       <td>{student.email}</td>

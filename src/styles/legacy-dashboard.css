@@ -4552,6 +4552,22 @@
       border: 1px solid rgba(220, 38, 38, 0.28);
     }
 
+    .admin-filter-field {
+      margin-left: auto;
+      min-width: 180px;
+    }
+
+    .admin-filter-field select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--card-inner);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.86rem;
+    }
+
     .admin-row-error {
       margin-top: 6px;
       padding: 6px 10px;
