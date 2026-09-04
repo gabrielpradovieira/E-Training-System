@@ -18,20 +18,25 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/client";
 import { checkIsAdmin, ensureProfile } from "@/lib/data";
+import type { UserProfile } from "@/lib/types";
 
 type AuthContextValue = {
   user: User | null;
+  profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
   signInEmail: (email: string, password: string) => Promise<void>;
   signInGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-reads the signed-in user's profile from Firestore and updates context. */
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
       setIsAdmin(nextUser ? await checkIsAdmin() : false);
+      if (!nextUser) setProfile(null);
       setLoading(false);
     });
     return () => unsub();
@@ -47,7 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInEmail = useCallback(async (email: string, password: string) => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     try {
-      const { isAdmin: admin } = await ensureProfile(cred.user);
+      const { profile: nextProfile, isAdmin: admin } = await ensureProfile(cred.user);
+      setProfile(nextProfile);
       setIsAdmin(admin);
     } catch (err) {
       await fbSignOut(auth).catch(() => {});
@@ -60,7 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const cred = await signInWithPopup(auth, provider);
     try {
       // First-time Google users are provisioned here; unapproved ones are rejected.
-      const { isAdmin: admin } = await ensureProfile(cred.user);
+      const { profile: nextProfile, isAdmin: admin } = await ensureProfile(cred.user);
+      setProfile(nextProfile);
       setIsAdmin(admin);
     } catch (err) {
       await fbSignOut(auth).catch(() => {});
@@ -72,9 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fbSignOut(auth);
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    if (!auth.currentUser) return;
+    const { profile: nextProfile, isAdmin: admin } = await ensureProfile(auth.currentUser);
+    setProfile(nextProfile);
+    setIsAdmin(admin);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, loading, isAdmin, signInEmail, signInGoogle, signOut }),
-    [user, loading, isAdmin, signInEmail, signInGoogle, signOut],
+    () => ({ user, profile, loading, isAdmin, signInEmail, signInGoogle, signOut, refreshProfile }),
+    [user, profile, loading, isAdmin, signInEmail, signInGoogle, signOut, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

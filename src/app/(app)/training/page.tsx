@@ -299,6 +299,9 @@ export default function TrainingPage() {
               {sections.map((sectionEntry, sectionIndex) => {
                 const isOpen = openTopics.has(sectionEntry.id);
                 const sectionNumber = String(sectionIndex + 1).padStart(2, "0");
+                const completedCount = sectionEntry.items.filter((_, index) =>
+                  watched.has(`${sectionEntry.id}-${index}`),
+                ).length;
                 return (
                   <div className="accordion-topic curriculum-cu-topic" key={sectionEntry.id}>
                     <button
@@ -310,6 +313,9 @@ export default function TrainingPage() {
                         <span className="topic-title">
                           {sectionNumber}. {sectionEntry.title}
                         </span>
+                      </span>
+                      <span className="topic-progress-count">
+                        {completedCount}/{sectionEntry.items.length}
                       </span>
                       <span className="accordion-arrow">&rsaquo;</span>
                     </button>
@@ -338,6 +344,9 @@ export default function TrainingPage() {
                               <ItemKindIcon type={item.itemType} />
                             </span>
                             <span className="lesson-label">{item.label}</span>
+                            {item.durationLabel && (
+                              <span className="lesson-duration">{item.durationLabel}</span>
+                            )}
                           </div>
                         );
                       })}

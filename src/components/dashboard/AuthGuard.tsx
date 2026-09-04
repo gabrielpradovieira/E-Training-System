@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { ensureProfile } from "@/lib/data";
 
 /**
  * Gates the authenticated app. Beyond requiring a signed-in user, it verifies
@@ -12,7 +11,7 @@ import { ensureProfile } from "@/lib/data";
  * no page renders for anyone the rules wouldn't let read data anyway.
  */
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, refreshProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [state, setState] = useState<"checking" | "approved">("checking");
@@ -31,7 +30,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     setState("checking");
     (async () => {
       try {
-        await ensureProfile(user);
+        await refreshProfile();
         if (!cancelled) setState("approved");
       } catch {
         // Not approved — don't let the shell render; sign out and redirect.
@@ -42,7 +41,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [loading, user, pathname, router, signOut]);
+  }, [loading, user, pathname, router, signOut, refreshProfile]);
 
   if (loading || !user || state !== "approved") {
     return <div className="auth-loading">Loading…</div>;

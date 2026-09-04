@@ -12,6 +12,8 @@ export type CurriculumLessonItem = {
   label: string;
   initiallyWatched: boolean;
   bunnyVideoId?: string;
+  /** mm:ss (or h:mm:ss) run time, shown next to the lesson label when known. */
+  durationLabel?: string;
 };
 
 export type CurriculumSection = {
@@ -33,6 +35,9 @@ const BUNNY_VIDEO_IDS: Record<string, string> = {
   "Smudge Brush": "21e3d117-1efc-4b9b-9822-b164a5ffe6e8",
 };
 
+/** Known run times for uploaded videos, keyed by lesson label. Filled in as real durations are confirmed. */
+const DURATION_LABELS: Record<string, string> = {};
+
 function section(id: string, title: string, subjects: string[]): CurriculumSection {
   return {
     id,
@@ -42,6 +47,7 @@ function section(id: string, title: string, subjects: string[]): CurriculumSecti
       label,
       initiallyWatched: false,
       bunnyVideoId: BUNNY_VIDEO_IDS[label],
+      durationLabel: DURATION_LABELS[label],
     })),
   };
 }

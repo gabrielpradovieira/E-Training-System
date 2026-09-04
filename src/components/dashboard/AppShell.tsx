@@ -134,14 +134,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="pgtop-stats">
               <div className="pgtop-stat">
                 <span className="pgtop-stat-value has-icon">
-                  <img className="pgtop-stat-icon" src="/assets/icon-top-training-hours.svg" alt="" aria-hidden="true" />
-                  186 h
-                </span>
-                <span className="pgtop-stat-label">Training hours</span>
-              </div>
-              <div className="pgtop-divider"></div>
-              <div className="pgtop-stat">
-                <span className="pgtop-stat-value has-icon">
                   <img className="pgtop-stat-icon" src="/assets/icon-top-event.svg" alt="" aria-hidden="true" />
                   Skills Challenge 2026
                 </span>

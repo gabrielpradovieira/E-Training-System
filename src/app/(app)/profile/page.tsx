@@ -1,13 +1,22 @@
-const fields = [
-  { label: "Full name", value: "Ahmed Al Mansoori" },
-  { label: "Email", value: "ahmed.almansoori@example.ae" },
-  { label: "Phone number", value: "+971 50 000 0000" },
-  { label: "Emirates ID", value: "784-0000-0000000-0" },
-  { label: "Role", value: "Competitor" },
-  { label: "Skill category", value: "3D Digital Game Art" },
-];
+"use client";
+
+import { useAuth } from "@/lib/auth-context";
 
 export default function ProfilePage() {
+  const { user, profile } = useAuth();
+
+  const displayName = profile?.displayName || user?.displayName || "—";
+  const email = profile?.email || user?.email || "—";
+  const school = profile?.school || "—";
+  const role = profile?.role === "admin" ? "Admin" : "Student";
+
+  const fields = [
+    { label: "Full name", value: displayName },
+    { label: "Email", value: email },
+    { label: "School", value: school },
+    { label: "Role", value: role },
+  ];
+
   return (
     <main id="profile" className="section active">
       <div className="profile-page">
@@ -20,8 +29,8 @@ export default function ProfilePage() {
               </svg>
             </div>
             <div>
-              <h2>Ahmed Al Mansoori</h2>
-              <p>Competitor profile and registration details</p>
+              <h2>{displayName}</h2>
+              <p>Student profile and registration details</p>
             </div>
           </div>
           <div className="profile-details">

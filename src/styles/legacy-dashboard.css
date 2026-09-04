@@ -566,8 +566,8 @@
 
     .curriculum-item-kind {
       flex: 0 0 auto;
-      width: 18px;
-      height: 18px;
+      width: 13px;
+      height: 13px;
       border-radius: 0;
       padding: 0;
       color: var(--nav-1);
@@ -577,8 +577,8 @@
     }
 
     .curriculum-item-kind svg {
-      width: 18px;
-      height: 18px;
+      width: 13px;
+      height: 13px;
       fill: currentColor;
     }
 
@@ -824,12 +824,23 @@
 
     .lesson-duration {
       margin-left: auto;
+      flex-shrink: 0;
       color: var(--muted);
-      font-size: 0.76rem;
-      font-weight: 600;
+      font-size: 0.7rem;
+      font-weight: 400;
+      opacity: 0.75;
       line-height: 1;
       white-space: nowrap;
-      text-align: left;
+      text-align: right;
+    }
+
+    .topic-progress-count {
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 500;
+      margin-left: auto;
+      white-space: nowrap;
     }
 
     .detail-item::before {

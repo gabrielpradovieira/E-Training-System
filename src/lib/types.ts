@@ -6,6 +6,7 @@ export type UserProfile = {
   displayName: string;
   role: UserRole;
   approved: boolean;
+  school?: string;
   skillCategory?: string;
   totalHours?: number;
   createdAt?: number;
