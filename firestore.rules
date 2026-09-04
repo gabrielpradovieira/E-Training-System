@@ -75,9 +75,14 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
+      // A teacher sees their own profile plus every student at their own
+      // school (not only the ones they personally created), but never a
+      // student — or another teacher — from a different school.
       allow read:   if isAdmin()
                     || (request.auth.uid == uid && canUse())
-                    || (isTeacher() && resource.data.createdBy == request.auth.uid);
+                    || (isTeacher()
+                        && resource.data.role == 'student'
+                        && resource.data.school == ownProfile().school);
 
       // Three ways a profile document can be created:
       //  - admin: no restrictions

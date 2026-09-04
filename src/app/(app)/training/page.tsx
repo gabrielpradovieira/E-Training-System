@@ -198,6 +198,15 @@ export default function TrainingPage() {
                 </div>
                 <div className="video-controls" aria-label="Lesson navigation">
                   <button
+                    className={`lesson-nav-btn mark-complete-btn${currentLessonKey && watched.has(currentLessonKey) ? " watched" : ""}`}
+                    type="button"
+                    disabled={!currentLessonKey}
+                    aria-pressed={!!currentLessonKey && watched.has(currentLessonKey)}
+                    onClick={() => currentLessonKey && toggleWatched(currentLessonKey)}
+                  >
+                    {currentLessonKey && watched.has(currentLessonKey) ? "Completed" : "Mark as completed"}
+                  </button>
+                  <button
                     className="lesson-nav-btn prev-lesson"
                     type="button"
                     disabled={currentIndex <= 0}
@@ -231,9 +240,9 @@ export default function TrainingPage() {
                     <span>Required tools</span>
                   </div>
                   <ul className="resource-list">
-                    <li>Drawing tablet</li>
-                    <li>Adobe Photoshop</li>
-                    <li>Autodesk Maya</li>
+                    <li>Drawing Tablet (Any Non-display XP-Pen/Wacom/Huion tablet)</li>
+                    <li>Adobe Photoshop 2026</li>
+                    <li>Autodesk Maya 2026/2027</li>
                   </ul>
                   <p className="resource-helper-note">
                     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -258,9 +267,22 @@ export default function TrainingPage() {
                   </div>
                   <ul className="resource-doc-list">
                     {[
-                      { label: "Technical Description", href: "#" },
-                      { label: "Example Test Project", href: "#" },
-                      { label: "Task Bank", href: "#" },
+                      {
+                        label: "Technical Description",
+                        href: "https://actvet-my.sharepoint.com/:b:/g/personal/90003515_aths_ac_ae/IQBtdfaVXYYuQaRB0_ZVACWsAVylXIo-04kGYxrB3jZpo7I?e=XrrB5T",
+                      },
+                      {
+                        label: "Example Test Project",
+                        href: "https://actvet-my.sharepoint.com/:b:/g/personal/90003515_aths_ac_ae/IQBXjXQFK5i5QpO7-nZyyWvMAftzAc_x0uXNDk7DESJNF70?e=Pbjej2",
+                      },
+                      {
+                        label: "Task Bank",
+                        href: "https://docs.google.com/spreadsheets/d/14fvJbF75PS_sfgknMiQFCXTFQ0kGsS4diNHYacCi3D0/edit?gid=0#gid=0",
+                      },
+                      {
+                        label: "Marking Scheme",
+                        href: "https://actvet-my.sharepoint.com/:x:/g/personal/90003515_aths_ac_ae/IQAxI9LS6mQtTpGfERZdK2q_ASybFcws8tp5ZmJ2QLukI90?e=PNwaZx",
+                      },
                     ].map((doc) => (
                       <li key={doc.label}>
                         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

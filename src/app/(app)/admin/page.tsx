@@ -257,7 +257,6 @@ function AdminPageContent() {
       let failures = 0;
       for (const teacher of teachers) {
         try {
-          // eslint-disable-next-line no-await-in-loop
           await resetTeacherPassword(teacher);
         } catch {
           failures += 1;

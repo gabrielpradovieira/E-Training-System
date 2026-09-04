@@ -81,7 +81,16 @@
       padding: 18px 16px 20px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
+      align-items: center;
       justify-content: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      color: #ffffff;
     }
 
     .brand-text {
@@ -213,10 +222,6 @@
       width: 76px;
     }
 
-    .app-container.sidebar-collapsed .brand-text {
-      font-size: 0.75rem;
-    }
-
     .app-container.sidebar-collapsed .sidebar-brand {
       padding-inline: 12px;
     }
@@ -224,8 +229,13 @@
     .app-container.sidebar-collapsed .sidebar-skill-title,
     .app-container.sidebar-collapsed .menu-label,
     .app-container.sidebar-collapsed .link-text,
-    .app-container.sidebar-collapsed .sidebar-competitor-info {
+    .app-container.sidebar-collapsed .sidebar-competitor-info,
+    .app-container.sidebar-collapsed .brand-text {
       display: none;
+    }
+
+    .app-container.sidebar-collapsed .sidebar-actions-icons {
+      flex-direction: column;
     }
 
     .app-container.sidebar-collapsed .menu-link {
@@ -1024,6 +1034,21 @@
       cursor: not-allowed;
       opacity: 0.48;
       transform: none;
+    }
+
+    .mark-complete-btn {
+      margin-right: 4px;
+    }
+
+    .mark-complete-btn.watched {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .mark-complete-btn.watched:hover {
+      background: var(--blue);
+      opacity: 0.9;
     }
 
     .detail-item.current {

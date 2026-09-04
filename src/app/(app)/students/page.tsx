@@ -297,13 +297,14 @@ function EditStudentPanel({
 }
 
 function StudentsPageContent() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, profile } = useAuth();
   const [students, setStudents] = useState<UserProfile[] | null>(null);
   const [editingUid, setEditingUid] = useState<string | null>(null);
 
   function reload() {
     if (!user) return;
-    fetchStudents(isAdmin ? {} : { teacherUid: user.uid })
+    if (!isAdmin && !profile?.school) return;
+    fetchStudents(isAdmin ? {} : { school: profile?.school })
       .then((list) => setStudents(list.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))))
       .catch(() => setStudents([]));
   }
@@ -311,7 +312,7 @@ function StudentsPageContent() {
   useEffect(() => {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isAdmin]);
+  }, [user, isAdmin, profile?.school]);
 
   const editingStudent = students?.find((s) => s.uid === editingUid) ?? null;
 
@@ -335,7 +336,7 @@ function StudentsPageContent() {
           <div className="profile-card-head">
             <div>
               <h2>Students</h2>
-              <p>{isAdmin ? "Every student in the system." : "Students you've added."}</p>
+              <p>{isAdmin ? "Every student in the system." : "Students at your school."}</p>
             </div>
           </div>
 
@@ -374,13 +375,17 @@ function StudentsPageContent() {
                       <td>{student.school ?? "—"}</td>
                       {isAdmin && <td><PasswordReveal password={student.password} /></td>}
                       <td>
-                        <button
-                          type="button"
-                          className="admin-link-btn"
-                          onClick={() => setEditingUid(student.uid)}
-                        >
-                          Edit
-                        </button>
+                        {isAdmin || student.createdBy === user?.uid ? (
+                          <button
+                            type="button"
+                            className="admin-link-btn"
+                            onClick={() => setEditingUid(student.uid)}
+                          >
+                            Edit
+                          </button>
+                        ) : (
+                          <span className="admin-empty">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}

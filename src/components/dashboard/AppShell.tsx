@@ -46,6 +46,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className={`app-container${collapsed ? " sidebar-collapsed" : ""}`}>
       <aside className="nav-sidebar">
         <div className="sidebar-brand">
+          <img className="brand-icon" src="/assets/icon-brand-computer.svg" alt="" aria-hidden="true" />
           <span className="brand-text">E-Training System</span>
         </div>
 
@@ -74,7 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <img
                   className="link-icon sidebar-vector-icon"
-                  src="/assets/icon-sidebar-marking.svg"
+                  src="/assets/icon-sidebar-students.svg"
                   alt=""
                   aria-hidden="true"
                 />
@@ -88,7 +89,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <img
                   className="link-icon sidebar-vector-icon"
-                  src="/assets/icon-sidebar-marking.svg"
+                  src="/assets/icon-sidebar-teacher.svg"
                   alt=""
                   aria-hidden="true"
                 />

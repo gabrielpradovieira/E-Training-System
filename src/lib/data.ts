@@ -242,12 +242,13 @@ export async function fetchTeachers(): Promise<UserProfile[]> {
 }
 
 /**
- * Student accounts visible to the caller: every student for an admin,
- * or only the ones a given teacher created for a teacher.
+ * Student accounts visible to the caller: every student for an admin, or
+ * only the ones at a given teacher's own school (teachers never see other
+ * schools' students, even ones added by a different teacher at that school).
  */
-export async function fetchStudents(scope: { teacherUid?: string }): Promise<UserProfile[]> {
+export async function fetchStudents(scope: { school?: string }): Promise<UserProfile[]> {
   const constraints = [where("role", "==", "student")];
-  if (scope.teacherUid) constraints.push(where("createdBy", "==", scope.teacherUid));
+  if (scope.school) constraints.push(where("school", "==", scope.school));
   const snap = await getDocs(query(collection(db, "users"), ...constraints));
   return snap.docs.map((d) => ({ uid: d.id, ...(d.data() as Omit<UserProfile, "uid">) }));
 }
