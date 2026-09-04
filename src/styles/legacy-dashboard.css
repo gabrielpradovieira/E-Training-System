@@ -525,20 +525,32 @@
     .curriculum-cu-topic .accordion-btn {
       align-items: flex-start;
       font-weight: 400;
-      background: linear-gradient(90deg, rgba(219, 234, 254, 0.92), rgba(239, 246, 255, 0.72));
-      border-left: 4px solid #1d78c1;
+      background: #bfcedb;
+      border-left: 4px solid #4b6d94;
     }
 
     .curriculum-cu-topic .accordion-btn:hover,
     .curriculum-cu-topic .accordion-btn.active {
-      background: linear-gradient(90deg, #9ec9ed, #c8e0f5);
-      color: #0d3b66;
+      background: #6092a6;
+      color: #fff;
     }
 
     .curriculum-cu-topic .accordion-btn:hover .curriculum-cu-code,
     .curriculum-cu-topic .accordion-btn.active .curriculum-cu-code {
-      background: rgba(13, 59, 102, 0.12);
-      color: #0d3b66;
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .curriculum-cu-topic .accordion-btn:hover .topic-progress-count,
+    .curriculum-cu-topic .accordion-btn.active .topic-progress-count,
+    .curriculum-cu-topic .accordion-btn:hover .topic-task-count,
+    .curriculum-cu-topic .accordion-btn.active .topic-task-count {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .curriculum-cu-topic .accordion-btn:hover .accordion-arrow,
+    .curriculum-cu-topic .accordion-btn.active .accordion-arrow {
+      color: #fff;
     }
 
     .curriculum-cu-topic .topic-title {
@@ -557,11 +569,6 @@
       align-items: center;
       gap: 10px;
       font-weight: 400;
-    }
-
-    .curriculum-video-item {
-      background: rgba(14, 165, 233, 0.06);
-      border-left-color: rgba(14, 165, 233, 0.65);
     }
 
     .curriculum-resource-item.resource-task {
@@ -659,12 +666,13 @@
     }
 
     .accordion-btn:hover {
-      background: rgba(92, 119, 171, 0.08);
+      background: #6092a6;
+      color: #fff;
     }
 
     .accordion-btn.active {
-      background: linear-gradient(90deg, rgba(92, 119, 171, 0.12), transparent);
-      color: var(--blue);
+      background: #6092a6;
+      color: #fff;
     }
 
     .topic-icon {
@@ -817,6 +825,7 @@
       padding: 10px 18px 10px 40px;
       font-size: 0.88rem;
       color: var(--muted);
+      background: #bfcedb;
       border-left: 3px solid transparent;
       transition: all 0.2s ease;
       cursor: pointer;
@@ -906,10 +915,14 @@
     }
 
     .detail-item:hover {
-      background: rgba(92, 119, 171, 0.08);
-      border-left-color: var(--blue);
-      color: var(--text);
+      background: #6092a6;
+      border-left-color: #6092a6;
+      color: #fff;
       padding-left: 44px;
+    }
+
+    .detail-item:hover .lesson-duration {
+      color: rgba(255, 255, 255, 0.85);
     }
 
     .topic-task-count {
@@ -1180,9 +1193,13 @@
     }
 
     .detail-item.current {
-      background: rgba(92, 119, 171, 0.12);
-      border-left-color: var(--blue);
-      color: var(--text);
+      background: #4b6d94;
+      border-left-color: #4b6d94;
+      color: #fff;
+    }
+
+    .detail-item.current .lesson-duration {
+      color: rgba(255, 255, 255, 0.85);
     }
 
     .video-title {
