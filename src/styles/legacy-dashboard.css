@@ -5017,7 +5017,24 @@
 
     body.dark-mode .pgtop-stat-icon {
       filter: brightness(0) invert(1);
-    }.pgtop-divider {
+    }
+
+    .pgtop-stat-completion {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .completion-ring-track {
+      stroke: var(--progress-track);
+    }
+
+    .completion-ring-progress {
+      stroke: var(--blue);
+      transition: stroke-dashoffset 0.4s ease;
+    }
+
+    .pgtop-divider {
       width: 1px;
       height: 36px;
       background: var(--line);

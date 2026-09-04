@@ -6,12 +6,47 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navItems, pageMeta } from "@/lib/pageMeta";
 import { useAuth } from "@/lib/auth-context";
+import { countAllLessons } from "@/lib/curriculum";
+import { getTrainingProgress } from "@/lib/progress";
 
 const EVENT_TARGET = new Date("2026-10-24T00:00:00+04:00");
+const TOTAL_LESSONS = countAllLessons();
 
 function currentSlug(pathname: string): string {
   const slug = pathname.split("/").filter(Boolean)[0];
   return slug && pageMeta[slug] ? slug : "training";
+}
+
+function CompletionRing({ percent }: { percent: number }) {
+  const size = 40;
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(100, Math.max(0, percent)) / 100) * circumference;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="completion-ring" aria-hidden="true">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        className="completion-ring-track"
+        strokeWidth={stroke}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        className="completion-ring-progress"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </svg>
+  );
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -30,6 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [countdown, setCountdown] = useState("-- days left");
+  const [completedCount, setCompletedCount] = useState(0);
 
   useEffect(() => {
     const update = () => {
@@ -41,6 +77,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const interval = setInterval(update, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Refetched on every navigation so marking a lesson watched on the
+  // training page is reflected here as soon as the user moves elsewhere.
+  useEffect(() => {
+    if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCompletedCount(0);
+      return;
+    }
+    let cancelled = false;
+    getTrainingProgress(user.uid)
+      .then((progress) => {
+        if (!cancelled) setCompletedCount(progress?.watchedKeys?.length ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, pathname]);
+
+  const completionPercent = TOTAL_LESSONS
+    ? Math.round((Math.min(completedCount, TOTAL_LESSONS) / TOTAL_LESSONS) * 100)
+    : 0;
 
   return (
     <div className={`app-container${collapsed ? " sidebar-collapsed" : ""}`}>
@@ -161,6 +220,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="pgtop-stats">
+              <div className="pgtop-stat pgtop-stat-completion">
+                <CompletionRing percent={completionPercent} />
+                <div>
+                  <span className="pgtop-stat-value">{completionPercent}%</span>
+                  <span className="pgtop-stat-label">{completedCount}/{TOTAL_LESSONS} lessons completed</span>
+                </div>
+              </div>
+              <div className="pgtop-divider" aria-hidden="true" />
               <div className="pgtop-stat">
                 <span className="pgtop-stat-value has-icon">
                   <img className="pgtop-stat-icon" src="/assets/icon-top-event.svg" alt="" aria-hidden="true" />

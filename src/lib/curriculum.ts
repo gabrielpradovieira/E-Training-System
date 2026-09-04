@@ -185,3 +185,11 @@ export const curriculum: Record<CurriculumLevel, CurriculumSection[]> = {
 export function buildCurriculumForLevel(level: CurriculumLevel): CurriculumSection[] {
   return curriculum[level] ?? curriculum["concept-art"];
 }
+
+/** Total lesson count across every level, for an overall completion percentage. */
+export function countAllLessons(): number {
+  return (Object.keys(curriculum) as CurriculumLevel[]).reduce(
+    (total, level) => total + curriculum[level].reduce((sum, section) => sum + section.items.length, 0),
+    0,
+  );
+}
