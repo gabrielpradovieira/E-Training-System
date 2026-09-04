@@ -43,12 +43,18 @@ function ItemKindIcon({ type }: { type: CurriculumItemType }) {
   );
 }
 
-function TaskIcon() {
+function TaskKindIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="3" width="16" height="18" rx="2.5"></rect>
-      <path d="m8.5 9 1.7 1.7L13.5 7.4"></path>
-      <path d="M8.5 16h7"></path>
+    <svg viewBox="0 0 512 512" aria-hidden="true" fill="currentColor">
+      <circle cx="256" cy="256" r="256"></circle>
+      <path
+        d="M164 258.4 226 320l124-124"
+        fill="none"
+        stroke="var(--bg-1, #fff)"
+        strokeWidth="34"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></path>
     </svg>
   );
 }
@@ -662,22 +668,24 @@ export default function TrainingPage() {
                                 {lessonTasks.map((task) => {
                                   const completion = completions.get(task.id);
                                   return (
-                                    <div key={task.id} className="lesson-task-row">
+                                    <div key={task.id} className={`detail-item curriculum-task-item${completion ? " watched" : ""}`}>
                                       <button
                                         type="button"
-                                        className={`lesson-watched-toggle task-toggle${completion ? " watched" : ""}`}
+                                        className={`lesson-watched-toggle${completion ? " watched" : ""}`}
                                         aria-pressed={!!completion}
                                         aria-label={completion ? "Unmark task as completed" : "Mark task as completed"}
                                         onClick={() => (completion ? handleUnmarkTask(task.id) : setCompletingTask(task))}
                                       />
                                       <a
-                                        className="lesson-task-link"
+                                        className="curriculum-task-link"
                                         href={task.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
-                                        <TaskIcon />
-                                        <span>{task.name}</span>
+                                        <span className="curriculum-item-kind task">
+                                          <TaskKindIcon />
+                                        </span>
+                                        <span className="lesson-label">{task.name}</span>
                                       </a>
                                       <button
                                         type="button"

@@ -948,47 +948,33 @@
     }
 
     .lesson-tasks {
-      padding: 6px 18px 10px 62px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      background: var(--card-inner);
     }
 
-    .lesson-task-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
+    /* Task rows reuse .detail-item's exact box (padding, font, colors,
+       hover) so they read as the same kind of row as a video lesson —
+       only the icon and the trailing controls differ. */
+    .detail-item.curriculum-task-item {
+      cursor: default;
     }
 
-    .lesson-task-link {
+    .curriculum-task-link {
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: var(--blue);
-      text-decoration: none;
+      gap: 10px;
       min-width: 0;
       flex: 1;
+      color: inherit;
+      text-decoration: none;
     }
 
-    .lesson-task-link:hover {
+    .curriculum-task-link:hover .lesson-label {
       text-decoration: underline;
     }
 
-    .lesson-task-link svg {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-
-    .lesson-task-link span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
     .task-complete-btn {
+      margin-left: auto;
       flex-shrink: 0;
       border: 1px solid var(--line);
       border-radius: 999px;
