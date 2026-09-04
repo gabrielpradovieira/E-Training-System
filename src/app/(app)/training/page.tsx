@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   buildCurriculumForLevel,
+  buildGlobalLessonNumbers,
   curriculumLevelLabels,
   type CurriculumItemType,
   type CurriculumLevel,
@@ -29,6 +30,10 @@ const FIRST_LESSON_KEY = "concept-art-tools-0";
 const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = (
   Object.keys(curriculumLevelLabels) as CurriculumLevel[]
 ).map((level) => ({ level, label: curriculumLevelLabels[level] }));
+
+// Continuous video numbering across both levels (Concept Art 1..N, then
+// 3D Modeling continues from there) — computed once, doesn't change at runtime.
+const GLOBAL_LESSON_NUMBERS = buildGlobalLessonNumbers();
 
 function ItemKindIcon({ type }: { type: CurriculumItemType }) {
   void type;
@@ -661,6 +666,9 @@ export default function TrainingPage() {
                               />
                               <span className={`curriculum-item-kind ${item.itemType}`}>
                                 <ItemKindIcon type={item.itemType} />
+                              </span>
+                              <span className="lesson-number">
+                                {String(GLOBAL_LESSON_NUMBERS.get(key) ?? 0).padStart(2, "0")}.
                               </span>
                               <span className="lesson-label">{item.label}</span>
                               {!item.bunnyVideoId && <span className="upcoming-badge">Upcoming</span>}

@@ -194,6 +194,25 @@ export function countAllLessons(): number {
   );
 }
 
+/**
+ * Global video number for every lesson, counted continuously from the
+ * first video of Concept Art through the last video of 3D Modeling —
+ * ignores section/level boundaries, so numbering never resets partway.
+ */
+export function buildGlobalLessonNumbers(): Map<string, number> {
+  const map = new Map<string, number>();
+  let n = 0;
+  (Object.keys(curriculum) as CurriculumLevel[]).forEach((level) => {
+    curriculum[level].forEach((sectionEntry) => {
+      sectionEntry.items.forEach((_, index) => {
+        n += 1;
+        map.set(`${sectionEntry.id}-${index}`, n);
+      });
+    });
+  });
+  return map;
+}
+
 export type LessonInfo = { label: string; sectionTitle: string; level: CurriculumLevel };
 
 /** Lesson label/section lookup by key, across every level — for displaying a task's lesson context. */

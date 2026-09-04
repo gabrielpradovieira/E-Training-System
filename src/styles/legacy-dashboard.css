@@ -837,6 +837,12 @@
       user-select: none;
     }
 
+    .lesson-number {
+      flex-shrink: 0;
+      font-weight: 700;
+      opacity: 0.75;
+    }
+
     .lesson-label {
       min-width: 0;
       flex: 1;
