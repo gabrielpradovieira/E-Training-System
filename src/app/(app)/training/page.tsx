@@ -314,9 +314,6 @@ export default function TrainingPage() {
   const videoTitle = currentIndex >= 0 && currentLessonKey
     ? lessonLabels.get(currentLessonKey) ?? "Welcome to 3D Digital Game Art"
     : "Welcome to 3D Digital Game Art";
-  const videoDescription = currentIndex >= 0
-    ? `Lesson ${currentIndex + 1} of ${totalLessons} in the 3D Digital Game Art curriculum.`
-    : "Select any lesson from the curriculum on the right to begin watching the training videos.";
   const currentVideoId = currentLessonKey ? lessonVideoIds.get(currentLessonKey) : undefined;
 
   function changeLevel(level: CurriculumLevel) {
@@ -461,7 +458,6 @@ export default function TrainingPage() {
               <div className="video-info">
                 <div className="video-copy">
                   <h3 className="video-title">{videoTitle}</h3>
-                  <p className="video-description">{videoDescription}</p>
                 </div>
                 <div className="video-controls" aria-label="Lesson navigation">
                   <button

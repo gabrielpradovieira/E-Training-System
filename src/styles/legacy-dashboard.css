@@ -525,32 +525,33 @@
     .curriculum-cu-topic .accordion-btn {
       align-items: flex-start;
       font-weight: 400;
-      background: #bfcedb;
+      background: #a2b2d0;
+      color: #313c4f;
       border-left: 4px solid #4b6d94;
     }
 
     .curriculum-cu-topic .accordion-btn:hover,
     .curriculum-cu-topic .accordion-btn.active {
-      background: #6092a6;
-      color: #fff;
+      background: #cdd9ef;
+      color: #313c4f;
     }
 
     .curriculum-cu-topic .accordion-btn:hover .curriculum-cu-code,
     .curriculum-cu-topic .accordion-btn.active .curriculum-cu-code {
-      background: rgba(255, 255, 255, 0.25);
-      color: #fff;
+      background: rgba(49, 60, 79, 0.12);
+      color: #313c4f;
     }
 
     .curriculum-cu-topic .accordion-btn:hover .topic-progress-count,
     .curriculum-cu-topic .accordion-btn.active .topic-progress-count,
     .curriculum-cu-topic .accordion-btn:hover .topic-task-count,
     .curriculum-cu-topic .accordion-btn.active .topic-task-count {
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(49, 60, 79, 0.75);
     }
 
     .curriculum-cu-topic .accordion-btn:hover .accordion-arrow,
     .curriculum-cu-topic .accordion-btn.active .accordion-arrow {
-      color: #fff;
+      color: #313c4f;
     }
 
     .curriculum-cu-topic .topic-title {
@@ -666,13 +667,13 @@
     }
 
     .accordion-btn:hover {
-      background: #6092a6;
-      color: #fff;
+      background: #cdd9ef;
+      color: #313c4f;
     }
 
     .accordion-btn.active {
-      background: #6092a6;
-      color: #fff;
+      background: #cdd9ef;
+      color: #313c4f;
     }
 
     .topic-icon {
@@ -824,8 +825,8 @@
     .detail-item {
       padding: 10px 18px 10px 40px;
       font-size: 0.88rem;
-      color: var(--muted);
-      background: #bfcedb;
+      color: #313c4f;
+      background: #cdd9ef;
       border-left: 3px solid transparent;
       transition: all 0.2s ease;
       cursor: pointer;
@@ -1190,16 +1191,6 @@
     .mark-complete-btn.watched:hover {
       background: var(--blue);
       opacity: 0.9;
-    }
-
-    .detail-item.current {
-      background: #4b6d94;
-      border-left-color: #4b6d94;
-      color: #fff;
-    }
-
-    .detail-item.current .lesson-duration {
-      color: rgba(255, 255, 255, 0.85);
     }
 
     .video-title {
