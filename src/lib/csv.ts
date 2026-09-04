@@ -71,3 +71,19 @@ export function parseStudentCsv(text: string): { rows: StudentCsvRow[]; errors: 
 
   return { rows, errors };
 }
+
+/** A downloadable starter CSV — header row plus one example row. */
+export const STUDENT_CSV_TEMPLATE =
+  "Full Name,Email,School\n" + "Ahmed Al Zaabi,ahmed.alzaabi@example.com,ATS Abu Dhabi - Girls\n";
+
+export function downloadStudentCsvTemplate(): void {
+  const blob = new Blob([STUDENT_CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "students-template.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

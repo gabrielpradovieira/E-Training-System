@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { createManagedUser, fetchStudents } from "@/lib/data";
+import { createManagedUser, fetchStudents, updateStudent } from "@/lib/data";
 import { generateStudentPassword } from "@/lib/generated-password";
-import { parseStudentCsv, type StudentCsvRow } from "@/lib/csv";
+import { downloadStudentCsvTemplate, parseStudentCsv, type StudentCsvRow } from "@/lib/csv";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
+import PasswordReveal from "@/components/dashboard/PasswordReveal";
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code;
@@ -15,6 +16,9 @@ function friendlyError(err: unknown): string {
       return "An account with this email already exists.";
     case "auth/invalid-email":
       return "Please enter a valid email address.";
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+      return "Couldn't verify the account's current password — it may have drifted out of sync.";
     default:
       return err instanceof Error ? err.message : "Something went wrong. Please try again.";
   }
@@ -79,7 +83,9 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
           />
         </div>
         <div className="admin-field">
-          <label htmlFor="student-school">School</label>
+          <label htmlFor="student-school">
+            School <span className="admin-field-hint">(e.g. ATS Abu Dhabi - Girls)</span>
+          </label>
           <input
             id="student-school"
             type="text"
@@ -152,6 +158,11 @@ function CsvUploadForm({ onCreated }: { onCreated: () => void }) {
   return (
     <div className="admin-form">
       <div className="csv-upload">
+        <div className="admin-row-actions">
+          <button type="button" className="admin-secondary-btn" onClick={downloadStudentCsvTemplate}>
+            Download CSV template
+          </button>
+        </div>
         <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} />
         <p className="csv-hint">
           Header row required with columns: <code>Full Name</code>, <code>Email</code>, <code>School</code>.
@@ -202,9 +213,93 @@ function CsvUploadForm({ onCreated }: { onCreated: () => void }) {
   );
 }
 
+function EditStudentPanel({
+  student,
+  onDone,
+  onCancel,
+}: {
+  student: UserProfile;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [displayName, setDisplayName] = useState(student.displayName);
+  const [school, setSchool] = useState(student.school ?? "");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus(null);
+    setBusy(true);
+    try {
+      const { password } = await updateStudent({
+        uid: student.uid,
+        currentEmail: student.email,
+        currentPassword: student.password,
+        displayName: displayName.trim(),
+        school: school.trim(),
+        regeneratePassword: generateStudentPassword,
+      });
+      if (password) {
+        setStatus({ kind: "success", message: `Saved. New password: ${password}` });
+      } else {
+        onDone();
+      }
+    } catch (err) {
+      setStatus({ kind: "error", message: friendlyError(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="admin-edit-panel">
+      <div className="admin-edit-panel-head">
+        <h4>Editing {student.displayName}</h4>
+        <button type="button" className="admin-link-btn" onClick={onCancel}>Cancel</button>
+      </div>
+      <form className="admin-form" onSubmit={handleSubmit}>
+        <div className="admin-form-grid">
+          <div className="admin-field">
+            <label htmlFor="edit-student-name">Full name</label>
+            <input
+              id="edit-student-name"
+              type="text"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          </div>
+          <div className="admin-field">
+            <label htmlFor="edit-student-school">School</label>
+            <input
+              id="edit-student-school"
+              type="text"
+              required
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+            />
+          </div>
+        </div>
+        <p className="csv-hint">Changing name or school regenerates this student&apos;s password to match.</p>
+        {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
+        <div className="admin-row-actions">
+          <button className="admin-submit-btn" type="submit" disabled={busy}>
+            {busy ? "Saving…" : "Save changes"}
+          </button>
+          <button type="button" className="admin-secondary-btn" onClick={onCancel} disabled={busy}>
+            {status?.kind === "success" ? "Done" : "Cancel"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function StudentsPageContent() {
   const { isAdmin, user } = useAuth();
   const [students, setStudents] = useState<UserProfile[] | null>(null);
+  const [editingUid, setEditingUid] = useState<string | null>(null);
 
   function reload() {
     if (!user) return;
@@ -217,6 +312,8 @@ function StudentsPageContent() {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAdmin]);
+
+  const editingStudent = students?.find((s) => s.uid === editingUid) ?? null;
 
   return (
     <main id="students" className="section active">
@@ -241,6 +338,18 @@ function StudentsPageContent() {
               <p>{isAdmin ? "Every student in the system." : "Students you've added."}</p>
             </div>
           </div>
+
+          {editingStudent && (
+            <EditStudentPanel
+              student={editingStudent}
+              onCancel={() => setEditingUid(null)}
+              onDone={() => {
+                setEditingUid(null);
+                reload();
+              }}
+            />
+          )}
+
           <div className="admin-table-wrap">
             {students === null ? (
               <p className="admin-empty">Loading…</p>
@@ -253,6 +362,8 @@ function StudentsPageContent() {
                     <th>Name</th>
                     <th>Email</th>
                     <th>School</th>
+                    {isAdmin && <th>Password</th>}
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -261,6 +372,16 @@ function StudentsPageContent() {
                       <td>{student.displayName}</td>
                       <td>{student.email}</td>
                       <td>{student.school ?? "—"}</td>
+                      {isAdmin && <td><PasswordReveal password={student.password} /></td>}
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-link-btn"
+                          onClick={() => setEditingUid(student.uid)}
+                        >
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

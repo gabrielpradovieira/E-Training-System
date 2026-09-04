@@ -1,7 +1,13 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import { createUserWithEmailAndPassword, signOut as fbSignOut, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as fbSignOut,
+  updatePassword,
+  updateProfile,
+} from "firebase/auth";
 import { collection, doc, getDoc, getDocs, limit, query, setDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { getSecondaryAuth } from "@/lib/firebase/secondary";
@@ -103,6 +109,7 @@ export async function createManagedUser(params: {
       totalHours: 0,
       createdAt: Date.now(),
       createdBy: createdByUid,
+      password,
       ...(school ? { school } : {}),
     };
     await setDoc(doc(db, "users", cred.user.uid), profile);
@@ -112,6 +119,74 @@ export async function createManagedUser(params: {
     // success or failure, so it never lingers as a stray signed-in state.
     await fbSignOut(secondaryAuth).catch(() => {});
   }
+}
+
+/**
+ * Changes another account's Firebase Auth password, without disturbing the
+ * caller's own session. Requires the account's *current* password (we keep
+ * it in Firestore precisely so this is possible) — signs into the secondary
+ * auth instance as that account, updates the password there, signs out.
+ */
+async function changeManagedUserPassword(email: string, oldPassword: string, newPassword: string): Promise<void> {
+  const secondaryAuth = getSecondaryAuth();
+  const cred = await signInWithEmailAndPassword(secondaryAuth, email, oldPassword);
+  try {
+    await updatePassword(cred.user, newPassword);
+  } finally {
+    await fbSignOut(secondaryAuth).catch(() => {});
+  }
+}
+
+/**
+ * Updates a teacher's display name / school, and optionally their password
+ * (admin sets a new one directly). Leaves email untouched.
+ */
+export async function updateTeacher(params: {
+  uid: string;
+  currentEmail: string;
+  currentPassword?: string;
+  displayName: string;
+  school?: string;
+  newPassword?: string;
+}): Promise<void> {
+  const { uid, currentEmail, currentPassword, displayName, school, newPassword } = params;
+  const patch: Record<string, unknown> = { displayName, ...(school ? { school } : {}) };
+
+  if (newPassword && newPassword !== currentPassword) {
+    if (!currentPassword) {
+      throw new Error("Can't change this account's password — its current password isn't on file.");
+    }
+    await changeManagedUserPassword(currentEmail, currentPassword, newPassword);
+    patch.password = newPassword;
+  }
+
+  await setDoc(doc(db, "users", uid), patch, { merge: true });
+}
+
+/**
+ * Updates a student's display name / school. Since a student's password is
+ * always derived from their name + school, editing either regenerates it to
+ * match (and updates the real Firebase Auth password to keep it in sync).
+ */
+export async function updateStudent(params: {
+  uid: string;
+  currentEmail: string;
+  currentPassword?: string;
+  displayName: string;
+  school: string;
+  regeneratePassword: (displayName: string, school: string) => string;
+}): Promise<{ password?: string }> {
+  const { uid, currentEmail, currentPassword, displayName, school, regeneratePassword } = params;
+  const patch: Record<string, unknown> = { displayName, school };
+
+  const nextPassword = regeneratePassword(displayName, school);
+  if (currentPassword && nextPassword !== currentPassword) {
+    await changeManagedUserPassword(currentEmail, currentPassword, nextPassword);
+    patch.password = nextPassword;
+  }
+
+  await setDoc(doc(db, "users", uid), patch, { merge: true });
+  return { password: patch.password as string | undefined };
 }
 
 /** All teacher accounts (admin only, per security rules). */

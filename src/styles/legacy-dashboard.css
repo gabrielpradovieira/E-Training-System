@@ -4593,6 +4593,107 @@
       padding: 10px 0;
     }
 
+    .admin-field-hint {
+      text-transform: none;
+      font-weight: 400;
+      color: var(--muted);
+      opacity: 0.85;
+      margin-left: 4px;
+      letter-spacing: normal;
+    }
+
+    .password-reveal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .password-reveal code {
+      background: var(--card-inner);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+    }
+
+    .password-eye-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .password-eye-btn:hover {
+      color: var(--blue);
+    }
+
+    .password-eye-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .admin-row-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .admin-link-btn {
+      border: none;
+      background: transparent;
+      color: var(--blue);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+
+    .admin-link-btn:hover {
+      text-decoration: underline;
+    }
+
+    .admin-secondary-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 18px;
+      background: var(--card-inner);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .admin-secondary-btn:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .admin-edit-panel {
+      border: 1px solid var(--blue);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: rgba(38, 128, 194, 0.05);
+      display: grid;
+      gap: 12px;
+    }
+
+    .admin-edit-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-edit-panel-head h4 {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
     /* Completed unit row */
     .comp-unit-row.completed {
       background: color-mix(in srgb, #228b73 6%, transparent);

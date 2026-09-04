@@ -90,7 +90,14 @@ service cloud.firestore {
                         && request.resource.data.createdBy == request.auth.uid);
 
       allow update: if isAdmin()
-                    || (request.auth.uid == uid && canUse() && protectedUnchanged());
+                    || (request.auth.uid == uid && canUse() && protectedUnchanged())
+                    // A teacher may edit (name/school/password) a student they
+                    // created, but can't reassign its role or ownership.
+                    || (isTeacher()
+                        && resource.data.role == 'student'
+                        && resource.data.createdBy == request.auth.uid
+                        && request.resource.data.role == 'student'
+                        && request.resource.data.createdBy == request.auth.uid);
       allow delete: if isAdmin();
 
       match /{sub=**} {

@@ -2,15 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { createManagedUser, fetchTeachers } from "@/lib/data";
+import { createManagedUser, fetchTeachers, updateTeacher } from "@/lib/data";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
+import PasswordReveal from "@/components/dashboard/PasswordReveal";
 
-function AddTeacherForm({ onCreated }: { onCreated: (teacher: UserProfile) => void }) {
+function friendlyError(err: unknown): string {
+  const code = (err as { code?: string })?.code;
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "An account with this email already exists.";
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/weak-password":
+      return "Password is too weak. Use at least 8 characters.";
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+      return "Couldn't verify the account's current password — it may have drifted out of sync.";
+    default:
+      return err instanceof Error ? err.message : "Something went wrong. Please try again.";
+  }
+}
+
+function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [school, setSchool] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
@@ -22,18 +41,20 @@ function AddTeacherForm({ onCreated }: { onCreated: (teacher: UserProfile) => vo
     setBusy(true);
     try {
       const displayName = `${firstName.trim()} ${lastName.trim()}`.trim();
-      const teacher = await createManagedUser({
+      await createManagedUser({
         displayName,
         email,
         password,
         role: "teacher",
+        school: school.trim() || undefined,
         createdByUid: user.uid,
       });
-      onCreated(teacher);
+      onCreated();
       setStatus({ kind: "success", message: `Teacher account created for ${displayName}.` });
       setFirstName("");
       setLastName("");
       setEmail("");
+      setSchool("");
       setPassword("");
     } catch (err) {
       setStatus({ kind: "error", message: friendlyError(err) });
@@ -76,6 +97,17 @@ function AddTeacherForm({ onCreated }: { onCreated: (teacher: UserProfile) => vo
           />
         </div>
         <div className="admin-field">
+          <label htmlFor="teacher-school">
+            School <span className="admin-field-hint">(e.g. ATS Abu Dhabi - Girls)</span>
+          </label>
+          <input
+            id="teacher-school"
+            type="text"
+            value={school}
+            onChange={(e) => setSchool(e.target.value)}
+          />
+        </div>
+        <div className="admin-field">
           <label htmlFor="teacher-password">Password</label>
           <input
             id="teacher-password"
@@ -96,22 +128,98 @@ function AddTeacherForm({ onCreated }: { onCreated: (teacher: UserProfile) => vo
   );
 }
 
-function friendlyError(err: unknown): string {
-  const code = (err as { code?: string })?.code;
-  switch (code) {
-    case "auth/email-already-in-use":
-      return "An account with this email already exists.";
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/weak-password":
-      return "Password is too weak. Use at least 8 characters.";
-    default:
-      return err instanceof Error ? err.message : "Something went wrong. Please try again.";
+function EditTeacherPanel({
+  teacher,
+  onDone,
+  onCancel,
+}: {
+  teacher: UserProfile;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [displayName, setDisplayName] = useState(teacher.displayName);
+  const [school, setSchool] = useState(teacher.school ?? "");
+  const [newPassword, setNewPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus(null);
+    setBusy(true);
+    try {
+      await updateTeacher({
+        uid: teacher.uid,
+        currentEmail: teacher.email,
+        currentPassword: teacher.password,
+        displayName: displayName.trim(),
+        school: school.trim() || undefined,
+        newPassword: newPassword.trim() || undefined,
+      });
+      onDone();
+    } catch (err) {
+      setStatus({ kind: "error", message: friendlyError(err) });
+    } finally {
+      setBusy(false);
+    }
   }
+
+  return (
+    <div className="admin-edit-panel">
+      <div className="admin-edit-panel-head">
+        <h4>Editing {teacher.displayName}</h4>
+        <button type="button" className="admin-link-btn" onClick={onCancel}>Cancel</button>
+      </div>
+      <form className="admin-form" onSubmit={handleSubmit}>
+        <div className="admin-form-grid">
+          <div className="admin-field">
+            <label htmlFor="edit-teacher-name">Full name</label>
+            <input
+              id="edit-teacher-name"
+              type="text"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          </div>
+          <div className="admin-field">
+            <label htmlFor="edit-teacher-school">School</label>
+            <input
+              id="edit-teacher-school"
+              type="text"
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+            />
+          </div>
+          <div className="admin-field">
+            <label htmlFor="edit-teacher-password">New password</label>
+            <input
+              id="edit-teacher-password"
+              type="text"
+              minLength={8}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Leave blank to keep current password"
+            />
+          </div>
+        </div>
+        {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
+        <div className="admin-row-actions">
+          <button className="admin-submit-btn" type="submit" disabled={busy}>
+            {busy ? "Saving…" : "Save changes"}
+          </button>
+          <button type="button" className="admin-secondary-btn" onClick={onCancel} disabled={busy}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 function AdminPageContent() {
   const [teachers, setTeachers] = useState<UserProfile[] | null>(null);
+  const [editingUid, setEditingUid] = useState<string | null>(null);
 
   function reload() {
     fetchTeachers()
@@ -122,6 +230,8 @@ function AdminPageContent() {
   useEffect(() => {
     reload();
   }, []);
+
+  const editingTeacher = teachers?.find((t) => t.uid === editingUid) ?? null;
 
   return (
     <main id="admin" className="section active">
@@ -143,6 +253,18 @@ function AdminPageContent() {
               <p>Every teacher account in the system.</p>
             </div>
           </div>
+
+          {editingTeacher && (
+            <EditTeacherPanel
+              teacher={editingTeacher}
+              onCancel={() => setEditingUid(null)}
+              onDone={() => {
+                setEditingUid(null);
+                reload();
+              }}
+            />
+          )}
+
           <div className="admin-table-wrap">
             {teachers === null ? (
               <p className="admin-empty">Loading…</p>
@@ -154,6 +276,9 @@ function AdminPageContent() {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>School</th>
+                    <th>Password</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -161,6 +286,17 @@ function AdminPageContent() {
                     <tr key={teacher.uid}>
                       <td>{teacher.displayName}</td>
                       <td>{teacher.email}</td>
+                      <td>{teacher.school ?? "—"}</td>
+                      <td><PasswordReveal password={teacher.password} /></td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-link-btn"
+                          onClick={() => setEditingUid(teacher.uid)}
+                        >
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
