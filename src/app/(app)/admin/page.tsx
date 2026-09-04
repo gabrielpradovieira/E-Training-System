@@ -11,137 +11,9 @@ import {
   updateTeacher,
 } from "@/lib/data";
 import { generateTeacherPassword } from "@/lib/generated-password";
-import { createTask, fetchAllTasks } from "@/lib/tasks";
-import type { CurriculumLevel } from "@/lib/curriculum";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
 import PasswordReveal from "@/components/dashboard/PasswordReveal";
-
-/**
- * One-time batch of tasks requested for specific "first video of a
- * sequence" lessons. Idempotent — SeedTasksPanel skips any preset whose
- * lessonKey + name already exists, so it's safe to run more than once.
- */
-const PRESET_TASKS: { name: string; link: string; level: CurriculumLevel; lessonKey: string }[] = [
-  {
-    name: "First sketches",
-    link: "https://docs.google.com/document/d/1FVx1WFxKGIISb-8eZTQdnHtnqmMxLcwWPHUEnDSTmM0/edit?usp=sharing",
-    level: "concept-art",
-    lessonKey: "concept-art-drawing-fundamentals-0",
-  },
-  {
-    name: "Basic Anatomy",
-    link: "https://docs.google.com/document/d/1kOTPF7eH0zpofvfV1a89hGFaRIYmspwt3EN77WbMm3I/edit?usp=sharing",
-    level: "concept-art",
-    lessonKey: "concept-art-drawing-fundamentals-3",
-  },
-  {
-    name: "Witcher (Painting the character)",
-    link: "https://docs.google.com/document/d/1M4zoSdIeo1gvLLKgOlHnjM_QSfqt2VuTzwHQpJYUGyE/edit?usp=sharing",
-    level: "concept-art",
-    lessonKey: "concept-art-painting-skills-2",
-  },
-  {
-    name: "Magic Potion",
-    link: "https://docs.google.com/document/d/1PqytyXNEeooMLwx4CTadkWJEghrpvXofQAaKJe9b3Us/edit?usp=sharing",
-    level: "3d-modeling",
-    lessonKey: "3d-maya-interface-3",
-  },
-  {
-    name: "Coffee Mug",
-    link: "https://docs.google.com/document/d/1crx5KFKijEpnxX6l2G_XUKWGsQwKHv0DW0sdfuTFnx8/edit?tab=t.0#heading=h.pcinp9hydz4t",
-    level: "3d-modeling",
-    lessonKey: "3d-maya-interface-6",
-  },
-  {
-    name: "Car",
-    link: "https://drive.google.com/file/d/1rngYE7pdRMGCcF-rbsqyxRs-ZwLiBzZJ/view?usp=drive_link",
-    level: "3d-modeling",
-    lessonKey: "3d-maya-interface-5",
-  },
-  {
-    name: "Airplane",
-    link: "https://docs.google.com/document/d/1PA9tGryA5p_A6pgBko6zWZLpdCX6f7AzS9-dFvKOHWM/edit?usp=sharing",
-    level: "3d-modeling",
-    lessonKey: "3d-maya-interface-10",
-  },
-  {
-    name: "Speed Modeling",
-    link: "https://docs.google.com/document/d/1g7RC3YijL9r2TI97oFxpiPehFk5sGItIcVD-mHuFbOQ/edit?usp=sharing",
-    level: "3d-modeling",
-    lessonKey: "3d-retopology-3",
-  },
-];
-
-function SeedTasksPanel() {
-  const { user } = useAuth();
-  const [existingKeys, setExistingKeys] = useState<Set<string> | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
-
-  function reload() {
-    fetchAllTasks()
-      .then((tasks) => setExistingKeys(new Set(tasks.map((t) => `${t.lessonKey}|${t.name}`))))
-      .catch(() => setExistingKeys(new Set()));
-  }
-
-  useEffect(() => {
-    reload();
-  }, []);
-
-  const missing = existingKeys
-    ? PRESET_TASKS.filter((preset) => !existingKeys.has(`${preset.lessonKey}|${preset.name}`))
-    : [];
-
-  async function handleAddMissing() {
-    if (!user || missing.length === 0) return;
-    setBusy(true);
-    setStatus(null);
-    try {
-      let failures = 0;
-      for (const preset of missing) {
-        try {
-          await createTask({
-            level: preset.level,
-            lessonKey: preset.lessonKey,
-            name: preset.name,
-            link: preset.link,
-            createdBy: user.uid,
-          });
-        } catch {
-          failures += 1;
-        }
-      }
-      setStatus(
-        failures === 0
-          ? { kind: "success", message: `Added ${missing.length} task(s).` }
-          : { kind: "error", message: `Added ${missing.length - failures} task(s), ${failures} failed.` },
-      );
-      reload();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (existingKeys === null) return null;
-  if (missing.length === 0) {
-    return <p className="admin-empty">All preset tasks already exist in the curriculum.</p>;
-  }
-
-  return (
-    <div>
-      <ul className="csv-hint" style={{ listStyle: "disc", paddingLeft: 18, margin: "0 0 12px" }}>
-        {missing.map((preset) => (
-          <li key={`${preset.lessonKey}|${preset.name}`}>{preset.name}</li>
-        ))}
-      </ul>
-      {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
-      <button className="admin-submit-btn" type="button" onClick={handleAddMissing} disabled={busy}>
-        {busy ? "Adding…" : `Add ${missing.length} missing task(s)`}
-      </button>
-    </div>
-  );
-}
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code;
@@ -477,16 +349,6 @@ function AdminPageContent() {
             </div>
           </div>
           <AddTeacherForm onCreated={reload} />
-        </section>
-
-        <section className="profile-card glass">
-          <div className="profile-card-head">
-            <div>
-              <h2>Seed curriculum tasks</h2>
-              <p>One-time helper to add the requested set of tasks to their lessons. Safe to click more than once.</p>
-            </div>
-          </div>
-          <SeedTasksPanel />
         </section>
 
         <section className="profile-card glass">

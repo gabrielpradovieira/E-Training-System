@@ -973,29 +973,36 @@
       text-decoration: underline;
     }
 
-    .task-complete-btn {
+    .task-upload-btn {
       margin-left: auto;
       flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
       border: 1px solid var(--line);
-      border-radius: 999px;
       background: var(--panel);
-      color: var(--muted);
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 4px 10px;
+      color: var(--nav-1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
       cursor: pointer;
-      white-space: nowrap;
       transition: all 0.15s ease;
     }
 
-    .task-complete-btn:hover {
-      border-color: var(--blue);
-      color: var(--blue);
+    .task-upload-btn svg {
+      width: 15px;
+      height: 15px;
     }
 
-    .task-complete-btn.completed {
-      background: var(--blue);
-      border-color: var(--blue);
+    .task-upload-btn:hover {
+      border-color: var(--nav-1);
+      transform: scale(1.06);
+    }
+
+    .task-upload-btn.completed {
+      background: var(--nav-1);
+      border-color: var(--nav-1);
       color: #fff;
     }
 

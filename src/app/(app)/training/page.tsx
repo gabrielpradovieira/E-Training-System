@@ -46,15 +46,18 @@ function ItemKindIcon({ type }: { type: CurriculumItemType }) {
 function TaskKindIcon() {
   return (
     <svg viewBox="0 0 512 512" aria-hidden="true" fill="currentColor">
-      <circle cx="256" cy="256" r="256"></circle>
-      <path
-        d="M164 258.4 226 320l124-124"
-        fill="none"
-        stroke="var(--bg-1, #fff)"
-        strokeWidth="34"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      ></path>
+      <path d="M287 0H80a48 48 0 0 0-48 48v416a48 48 0 0 0 48 48h190.7A160 160 0 0 1 240 400c0-15.1 1.6-29.8 4.6-44H144a24 24 0 0 1 0-48h116.7A159.4 159.4 0 0 1 328 259.3V208a24 24 0 0 1-24-24v-72h-96a24 24 0 0 1-24-24V40h-.3a8 8 0 0 0-.1 1v103a41 41 0 0 0 41 41h103c.4 0 .7 0 1-.1V259c12.8-6.6 26.6-11.7 41-15.1V149.3c0-12.7-5-24.9-14-33.9L305 21a48 48 0 0 0-34-21ZM144 240h84.8a160.6 160.6 0 0 0-30 48H144a24 24 0 0 1 0-48Zm0-96h160a24 24 0 0 1 0 48H144a24 24 0 0 1 0-48Z" />
+      <path d="M400 256a144 144 0 1 0 0 288 144 144 0 0 0 0-288Zm79.6 105.6-88 96a24 24 0 0 1-34.9.7l-48-48a24 24 0 1 1 34-34l30.1 30.1 71.3-77.8a24 24 0 1 1 35.5 32.4Z" />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v11" />
+      <path d="m7 8 5-5 5 5" />
+      <path d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2" />
     </svg>
   );
 }
@@ -689,10 +692,12 @@ export default function TrainingPage() {
                                       </a>
                                       <button
                                         type="button"
-                                        className={`task-complete-btn${completion ? " completed" : ""}`}
+                                        className={`task-upload-btn${completion ? " completed" : ""}`}
+                                        aria-label={completion ? "Submitted — click to unsubmit" : "Submit task"}
+                                        title={completion ? "Submitted — click to unsubmit" : "Submit"}
                                         onClick={() => (completion ? handleUnmarkTask(task.id) : setCompletingTask(task))}
                                       >
-                                        {completion ? "Submitted" : "Submit"}
+                                        <UploadIcon />
                                       </button>
                                       {isAdmin && (
                                         <button
