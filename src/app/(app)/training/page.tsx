@@ -46,19 +46,19 @@ function ItemKindIcon({ type }: { type: CurriculumItemType }) {
 function TaskKindIcon() {
   // Same solid-disc structure as ItemKindIcon (the video icon) — a full
   // currentColor circle behind a cutout glyph — so the two render with
-  // identical color coverage. Only the glyph (checkmark vs. play triangle)
-  // differs.
+  // identical color coverage. The glyph itself is a small document, drawn
+  // in --bg-1 (the cutout color) with its "lines" drawn back in
+  // currentColor, same two-color convention as the play icon.
   return (
     <svg viewBox="0 0 512 512" aria-hidden="true" fill="currentColor">
       <circle cx="256" cy="256" r="256"></circle>
       <path
-        d="M158 264.6 226.5 333 354 205.5"
-        fill="none"
-        stroke="var(--bg-1, #fff)"
-        strokeWidth="42"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M196 148h84l46 46v172a12 12 0 0 1-12 12H196a12 12 0 0 1-12-12V160a12 12 0 0 1 12-12Z"
+        fill="var(--bg-1, #fff)"
       ></path>
+      <rect x="208" y="228" width="96" height="16" rx="8"></rect>
+      <rect x="208" y="264" width="96" height="16" rx="8"></rect>
+      <rect x="208" y="300" width="64" height="16" rx="8"></rect>
     </svg>
   );
 }
@@ -69,6 +69,14 @@ function UploadIcon() {
       <path d="M12 3v11" />
       <path d="m7 8 5-5 5 5" />
       <path d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m5 13 4 4L19 7" />
     </svg>
   );
 }
@@ -699,7 +707,7 @@ export default function TrainingPage() {
                                         <span className="curriculum-item-kind task">
                                           <TaskKindIcon />
                                         </span>
-                                        <span className="lesson-label">{task.name}</span>
+                                        <span className="lesson-label">Task: {task.name}</span>
                                       </a>
                                       <button
                                         type="button"
@@ -708,7 +716,7 @@ export default function TrainingPage() {
                                         title={completion ? "Submitted — click to unsubmit" : "Submit"}
                                         onClick={() => (completion ? handleUnmarkTask(task.id) : setCompletingTask(task))}
                                       >
-                                        <UploadIcon />
+                                        {completion ? <CheckIcon /> : <UploadIcon />}
                                       </button>
                                       {isAdmin && (
                                         <button

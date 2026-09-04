@@ -921,26 +921,37 @@
     }
 
     .add-task-btn {
-      margin-left: 6px;
+      margin-left: 0;
       flex-shrink: 0;
       border: 1px dashed var(--blue);
       background: transparent;
       color: var(--blue);
       font-size: 0.68rem;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 0;
       border-radius: 999px;
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.15s ease;
       white-space: nowrap;
+      max-width: 0;
+      overflow: hidden;
+      border-width: 0;
+      transition: max-width 0.2s ease, opacity 0.15s ease, padding 0.2s ease, margin-left 0.2s ease, border-width 0.2s ease;
     }
 
+    /* On hover/focus (video rows only — this button never renders for
+       non-admins), the button expands from zero width, pushing the
+       duration label left to make room; the row's usual layout is
+       otherwise untouched. */
     .detail-item:hover .add-task-btn,
     .detail-item:focus-within .add-task-btn {
       opacity: 1;
       pointer-events: auto;
+      max-width: 110px;
+      padding: 3px 8px;
+      margin-left: 6px;
+      border-width: 1px;
     }
 
     .add-task-btn:hover {
