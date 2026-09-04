@@ -979,8 +979,8 @@
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      border: 1px solid var(--line);
-      background: var(--panel);
+      border: none;
+      background: transparent;
       color: var(--nav-1);
       display: inline-flex;
       align-items: center;
@@ -991,19 +991,23 @@
     }
 
     .task-upload-btn svg {
-      width: 15px;
-      height: 15px;
+      width: 16px;
+      height: 16px;
     }
 
     .task-upload-btn:hover {
-      border-color: var(--nav-1);
+      background: rgba(13, 59, 102, 0.1);
       transform: scale(1.06);
     }
 
     .task-upload-btn.completed {
       background: var(--nav-1);
-      border-color: var(--nav-1);
       color: #fff;
+    }
+
+    .task-upload-btn.completed:hover {
+      background: var(--nav-1);
+      opacity: 0.9;
     }
 
     .task-delete-btn {
