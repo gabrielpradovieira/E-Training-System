@@ -4445,6 +4445,154 @@
       font-weight: 500;
     }
 
+    /* Admin / teacher management pages */
+    .admin-form {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+
+    .admin-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .admin-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .admin-field label {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .admin-field input {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 12px;
+      background: var(--card-inner);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .admin-field input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(38, 128, 194, 0.12);
+    }
+
+    .admin-submit-btn {
+      justify-self: start;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 22px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .admin-submit-btn:hover:not(:disabled) {
+      background: var(--nav-2);
+      transform: translateY(-1px);
+    }
+
+    .admin-submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .admin-status {
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+    }
+
+    .admin-status.success {
+      background: rgba(34, 197, 94, 0.12);
+      color: #15803d;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .admin-status.error {
+      background: rgba(220, 38, 38, 0.1);
+      color: #b91c1c;
+      border: 1px solid rgba(220, 38, 38, 0.28);
+    }
+
+    .admin-divider {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 20px 0;
+    }
+
+    .csv-upload {
+      border: 1.5px dashed var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+      background: var(--card-inner);
+    }
+
+    .csv-upload input[type="file"] {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .csv-hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .admin-table-wrap {
+      overflow-x: auto;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+
+    .admin-table th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .admin-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .admin-table code {
+      background: var(--card-inner);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+    }
+
+    .admin-empty {
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 10px 0;
+    }
+
     /* Completed unit row */
     .comp-unit-row.completed {
       background: color-mix(in srgb, #228b73 6%, transparent);

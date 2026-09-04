@@ -7,9 +7,16 @@ rules_version = '2';
 //  - Admin is the single ADMIN_EMAIL below. Set it to your admin's email.
 //    (There is no server/Admin SDK in this model, so the admin email is
 //    enforced here in the rules — this file IS the source of truth for it.)
-//  - A user may read/write ONLY their own profile, and only if their email
-//    is on the admin-managed `allowlist` (i.e. pre-approved) — or they are
-//    the admin. Unapproved accounts can exist but can touch no data.
+//  - Three roles: admin, teacher, student.
+//    - Admin can read/write anything.
+//    - Teacher can create student accounts (role must be 'student', and
+//      createdBy must be the teacher's own uid) and read/list only the
+//      students they created.
+//    - A student may read only their own profile.
+//  - A user counts as "approved" either via the legacy allowlist doc, or
+//    because their own profile document already has approved == true —
+//    every account an admin/teacher provisions is created with
+//    approved: true set directly, so it never needs an allowlist entry.
 //  - Users cannot change their own role / approval / email.
 //  - The allowlist and app config/media are admin-only for writes.
 //  - Everything else is denied by default.
@@ -38,10 +45,22 @@ service cloud.firestore {
       return isSignedIn() && userEmail() == adminEmail();
     }
 
-    // Pre-approved = an allowlist doc keyed by the user's (lower-case) email.
+    function ownProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isTeacher() {
+      return isSignedIn() && ownProfile().role == 'teacher';
+    }
+
+    // Pre-approved = an allowlist doc keyed by the user's (lower-case) email
+    // (legacy self-registration path), OR the caller's own profile already
+    // has approved == true (the path every admin/teacher-provisioned
+    // account takes).
     function isApproved() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/allowlist/$(userEmail()));
+        && (exists(/databases/$(database)/documents/allowlist/$(userEmail()))
+            || ownProfile().approved == true);
     }
 
     function canUse() {
@@ -56,11 +75,20 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read:   if isAdmin() || (request.auth.uid == uid && canUse());
-      // Non-admins may only create their own profile as a "student" —
-      // the admin role can never be self-assigned.
+      allow read:   if isAdmin()
+                    || (request.auth.uid == uid && canUse())
+                    || (isTeacher() && resource.data.createdBy == request.auth.uid);
+
+      // Three ways a profile document can be created:
+      //  - admin: no restrictions
+      //  - self-registration (legacy): the signer creates their own doc as 'student'
+      //  - teacher provisioning: a teacher creates a *student* they own (createdBy == teacher)
       allow create: if isAdmin()
-                    || (request.auth.uid == uid && canUse() && request.resource.data.role == 'student');
+                    || (request.auth.uid == uid && canUse() && request.resource.data.role == 'student')
+                    || (isTeacher()
+                        && request.resource.data.role == 'student'
+                        && request.resource.data.createdBy == request.auth.uid);
+
       allow update: if isAdmin()
                     || (request.auth.uid == uid && canUse() && protectedUnchanged());
       allow delete: if isAdmin();

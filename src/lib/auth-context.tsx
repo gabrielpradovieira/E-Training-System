@@ -25,6 +25,7 @@ type AuthContextValue = {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isTeacher: boolean;
   signInEmail: (email: string, password: string) => Promise<void>;
   signInGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -87,9 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(admin);
   }, []);
 
+  const isTeacher = profile?.role === "teacher";
+
   const value = useMemo(
-    () => ({ user, profile, loading, isAdmin, signInEmail, signInGoogle, signOut, refreshProfile }),
-    [user, profile, loading, isAdmin, signInEmail, signInGoogle, signOut, refreshProfile],
+    () => ({ user, profile, loading, isAdmin, isTeacher, signInEmail, signInGoogle, signOut, refreshProfile }),
+    [user, profile, loading, isAdmin, isTeacher, signInEmail, signInGoogle, signOut, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,4 @@
-export type UserRole = "student" | "admin";
+export type UserRole = "student" | "teacher" | "admin";
 
 export type UserProfile = {
   uid: string;
@@ -11,4 +11,6 @@ export type UserProfile = {
   totalHours?: number;
   createdAt?: number;
   lastLoginAt?: number;
+  /** uid of the admin/teacher who provisioned this account (students/teachers only). */
+  createdBy?: string;
 };

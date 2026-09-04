@@ -15,6 +15,16 @@ export const pageMeta: Record<string, PageMeta> = {
     icon: "/assets/icon-sidebar-dashboard.svg",
     description: "View competitor registration and contact details.",
   },
+  students: {
+    title: "Manage Students",
+    icon: "/assets/icon-sidebar-marking.svg",
+    description: "Add students individually or in bulk via CSV.",
+  },
+  admin: {
+    title: "Manage Teachers",
+    icon: "/assets/icon-sidebar-marking.svg",
+    description: "Add teacher accounts for the training system.",
+  },
 };
 
 export const navItems: { slug: string; label: string; icon: string }[] = [

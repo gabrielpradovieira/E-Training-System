@@ -17,7 +17,7 @@ function currentSlug(pathname: string): string {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, isTeacher, signOut } = useAuth();
   const slug = currentSlug(pathname);
   const meta = pageMeta[slug];
 
@@ -67,6 +67,34 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="link-text">{item.label}</span>
               </Link>
             ))}
+            {(isTeacher || isAdmin) && (
+              <Link
+                href="/students"
+                className={`menu-link${slug === "students" ? " active" : ""}`}
+              >
+                <img
+                  className="link-icon sidebar-vector-icon"
+                  src="/assets/icon-sidebar-marking.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span className="link-text">Manage Students</span>
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={`menu-link${slug === "admin" ? " active" : ""}`}
+              >
+                <img
+                  className="link-icon sidebar-vector-icon"
+                  src="/assets/icon-sidebar-marking.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span className="link-text">Manage Teachers</span>
+              </Link>
+            )}
           </div>
         </nav>
 
