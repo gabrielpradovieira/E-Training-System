@@ -23,10 +23,6 @@ const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = (
   Object.keys(curriculumLevelLabels) as CurriculumLevel[]
 ).map((level) => ({ level, label: curriculumLevelLabels[level] }));
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-
 function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -234,7 +230,6 @@ function StudentTasksContent({ uid }: { uid: string }) {
                     <th>Lesson</th>
                     <th>Status</th>
                     <th>Link</th>
-                    <th>Submitted</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -244,9 +239,7 @@ function StudentTasksContent({ uid }: { uid: string }) {
                       <tr key={task.id}>
                         <td className="task-number-cell">{formatTaskNumber(taskOrdinals.get(task.id) ?? 0)}</td>
                         <td className="roster-name-cell">{task.name}</td>
-                        <td>
-                          {info ? `${curriculumLevelLabels[info.level]} · ${info.sectionTitle} · ${info.label}` : "—"}
-                        </td>
+                        <td>{info ? `${info.sectionTitle} · ${info.label}` : "—"}</td>
                         <td>
                           <span className={`task-status-pill${completion ? " submitted" : " pending"}`}>
                             {completion ? "Submitted" : "To do"}
@@ -263,7 +256,6 @@ function StudentTasksContent({ uid }: { uid: string }) {
                             {completion ? "View submission" : "Open task"}
                           </a>
                         </td>
-                        <td>{completion ? formatDate(completion.completedAt) : "—"}</td>
                       </tr>
                     );
                   })}
