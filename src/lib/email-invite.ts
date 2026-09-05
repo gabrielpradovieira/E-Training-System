@@ -18,7 +18,7 @@ export const COURSE_NAME = "Skills Challenge Preparation Course 2026";
  *
  * The EmailJS template (configured in the EmailJS dashboard, not here) is
  * expected to use these variable names: to_name, to_email, role,
- * login_email, login_password, course_name.
+ * login_email, login_password, login_url, course_name.
  */
 export async function sendInviteEmail(params: {
   displayName: string;
@@ -37,6 +37,7 @@ export async function sendInviteEmail(params: {
         role: params.role === "teacher" ? "Teacher" : "Student",
         login_email: params.email,
         login_password: params.password,
+        login_url: `${window.location.origin}/login`,
         course_name: COURSE_NAME,
       },
       { publicKey: PUBLIC_KEY },
