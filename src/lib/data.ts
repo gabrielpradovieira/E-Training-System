@@ -116,7 +116,7 @@ export async function createManagedUser(params: {
       createdBy: createdByUid,
       password,
       ...(school ? { school } : {}),
-      ...(role === "teacher" ? { mustChangePassword: true } : {}),
+      mustChangePassword: true,
     };
     await setDoc(doc(db, "users", cred.user.uid), profile);
     return profile;
@@ -164,20 +164,22 @@ export async function changeOwnPassword(
 }
 
 /**
- * Resets a teacher's password back to the default Firstname.Lastname scheme
- * and flags the account so they must change it again after their next login.
- * Used by an admin to bring an already-created teacher onto the new scheme.
+ * Resets a managed account's (teacher or student) password back to the
+ * default Firstname.Lastname scheme and flags the account so it must be
+ * changed again after the next login. This is the only way an admin (or,
+ * for a student, their own teacher) can affect another account's password
+ * — nobody can see or set an arbitrary password for someone else.
  */
-export async function resetTeacherPassword(teacher: UserProfile): Promise<string> {
-  const newPassword = generateTeacherPassword(teacher.displayName);
-  if (!teacher.password) {
+async function resetManagedPassword(account: UserProfile): Promise<string> {
+  const newPassword = generateTeacherPassword(account.displayName);
+  if (!account.password) {
     const e = new Error("No current password on file for this account — use \"Send reset email\" instead.");
     (e as Error & { code?: string }).code = "no-password-on-file";
     throw e;
   }
-  if (newPassword !== teacher.password) {
+  if (newPassword !== account.password) {
     try {
-      await changeManagedUserPassword(teacher.email, teacher.password, newPassword);
+      await changeManagedUserPassword(account.email, account.password, newPassword);
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
@@ -191,11 +193,21 @@ export async function resetTeacherPassword(teacher: UserProfile): Promise<string
     }
   }
   await setDoc(
-    doc(db, "users", teacher.uid),
+    doc(db, "users", account.uid),
     { password: newPassword, mustChangePassword: true },
     { merge: true },
   );
   return newPassword;
+}
+
+/** Resets a teacher's password back to the default Firstname.Lastname scheme. Admin only. */
+export async function resetTeacherPassword(teacher: UserProfile): Promise<string> {
+  return resetManagedPassword(teacher);
+}
+
+/** Resets a student's password back to the default Firstname.Lastname scheme. Admin or their own teacher. */
+export async function resetStudentPassword(student: UserProfile): Promise<string> {
+  return resetManagedPassword(student);
 }
 
 /**
@@ -203,64 +215,42 @@ export async function resetTeacherPassword(teacher: UserProfile): Promise<string
  * when its stored current password no longer matches the real one (so the
  * secondary-auth sign-in used elsewhere can't work) — the only account
  * recovery path available without an Admin SDK. Doesn't touch Firestore;
- * the account's mustChangePassword flag stays as-is since the teacher will
- * set their own password via the email link.
+ * the account's mustChangePassword flag stays as-is since the account holder
+ * will set their own password via the email link.
  */
-export async function sendTeacherPasswordResetEmail(email: string): Promise<void> {
+export async function sendManagedPasswordResetEmail(email: string): Promise<void> {
   await sendPasswordResetEmail(auth, email);
 }
 
+/** @deprecated use {@link sendManagedPasswordResetEmail} — kept as an alias. */
+export const sendTeacherPasswordResetEmail = sendManagedPasswordResetEmail;
+
 /**
- * Updates a teacher's display name / school, and optionally their password
- * (admin sets a new one directly). Leaves email untouched.
+ * Updates a teacher's display name / school. Nobody but the teacher
+ * themselves can set their password — an admin can only reset it back to
+ * the default (see {@link resetTeacherPassword}).
  */
 export async function updateTeacher(params: {
   uid: string;
-  currentEmail: string;
-  currentPassword?: string;
   displayName: string;
   school?: string;
-  newPassword?: string;
 }): Promise<void> {
-  const { uid, currentEmail, currentPassword, displayName, school, newPassword } = params;
-  const patch: Record<string, unknown> = { displayName, ...(school ? { school } : {}) };
-
-  if (newPassword && newPassword !== currentPassword) {
-    if (!currentPassword) {
-      throw new Error("Can't change this account's password — its current password isn't on file.");
-    }
-    await changeManagedUserPassword(currentEmail, currentPassword, newPassword);
-    patch.password = newPassword;
-    patch.mustChangePassword = true;
-  }
-
-  await setDoc(doc(db, "users", uid), patch, { merge: true });
+  const { uid, displayName, school } = params;
+  await setDoc(doc(db, "users", uid), { displayName, ...(school ? { school } : {}) }, { merge: true });
 }
 
 /**
- * Updates a student's display name / school. Since a student's password is
- * always derived from their name + school, editing either regenerates it to
- * match (and updates the real Firebase Auth password to keep it in sync).
+ * Updates a student's display name / school. Nobody but the student
+ * themselves can set their password — an admin or their own teacher can
+ * only reset it back to the default (see {@link resetStudentPassword}).
  */
 export async function updateStudent(params: {
   uid: string;
-  currentEmail: string;
-  currentPassword?: string;
   displayName: string;
   school: string;
-  regeneratePassword: (displayName: string, school: string) => string;
-}): Promise<{ password?: string }> {
-  const { uid, currentEmail, currentPassword, displayName, school, regeneratePassword } = params;
-  const patch: Record<string, unknown> = { displayName, school };
-
-  const nextPassword = regeneratePassword(displayName, school);
-  if (currentPassword && nextPassword !== currentPassword) {
-    await changeManagedUserPassword(currentEmail, currentPassword, nextPassword);
-    patch.password = nextPassword;
-  }
-
-  await setDoc(doc(db, "users", uid), patch, { merge: true });
-  return { password: patch.password as string | undefined };
+}): Promise<void> {
+  const { uid, displayName, school } = params;
+  await setDoc(doc(db, "users", uid), { displayName, school }, { merge: true });
 }
 
 /**

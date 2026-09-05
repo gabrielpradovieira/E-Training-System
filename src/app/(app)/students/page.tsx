@@ -2,12 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { createManagedUser, fetchStudents, updateStudent } from "@/lib/data";
+import {
+  createManagedUser,
+  fetchStudents,
+  resetStudentPassword,
+  sendManagedPasswordResetEmail,
+  updateStudent,
+} from "@/lib/data";
 import { generateStudentPassword } from "@/lib/generated-password";
 import { downloadStudentCsvTemplate, parseStudentCsv, type StudentCsvRow } from "@/lib/csv";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
-import PasswordReveal from "@/components/dashboard/PasswordReveal";
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code;
@@ -38,7 +43,7 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
     setStatus(null);
     setBusy(true);
     try {
-      const password = generateStudentPassword(fullName, school);
+      const password = generateStudentPassword(fullName);
       await createManagedUser({
         displayName: fullName.trim(),
         email,
@@ -133,7 +138,7 @@ function CsvUploadForm({ onCreated }: { onCreated: () => void }) {
       setRows(
         parsedRows.map((row) => ({
           ...row,
-          password: generateStudentPassword(row.fullName, row.school),
+          password: generateStudentPassword(row.fullName),
           status: "pending" as const,
         })),
       );
@@ -258,19 +263,12 @@ function EditStudentPanel({
     setStatus(null);
     setBusy(true);
     try {
-      const { password } = await updateStudent({
+      await updateStudent({
         uid: student.uid,
-        currentEmail: student.email,
-        currentPassword: student.password,
         displayName: displayName.trim(),
         school: school.trim(),
-        regeneratePassword: generateStudentPassword,
       });
-      if (password) {
-        setStatus({ kind: "success", message: `Saved. New password: ${password}` });
-      } else {
-        onDone();
-      }
+      onDone();
     } catch (err) {
       setStatus({ kind: "error", message: friendlyError(err) });
     } finally {
@@ -307,14 +305,17 @@ function EditStudentPanel({
             />
           </div>
         </div>
-        <p className="csv-hint">Changing name or school regenerates this student&apos;s password to match.</p>
+        <p className="csv-hint">
+          Password can&apos;t be viewed or set here — use &quot;Reset password&quot; to reset it back to the
+          default (Firstname.Lastname).
+        </p>
         {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
         <div className="admin-row-actions">
           <button className="admin-submit-btn" type="submit" disabled={busy}>
             {busy ? "Saving…" : "Save changes"}
           </button>
           <button type="button" className="admin-secondary-btn" onClick={onCancel} disabled={busy}>
-            {status?.kind === "success" ? "Done" : "Cancel"}
+            Cancel
           </button>
         </div>
       </form>
@@ -356,6 +357,8 @@ function StudentsPageContent() {
   const [editingUid, setEditingUid] = useState<string | null>(null);
   const [schoolFilter, setSchoolFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [resettingUid, setResettingUid] = useState<string | null>(null);
+  const [rowStatus, setRowStatus] = useState<Record<string, { kind: "success" | "error"; message: string }>>({});
 
   function reload() {
     if (!user) return;
@@ -371,6 +374,48 @@ function StudentsPageContent() {
   }, [user, isAdmin, profile?.school]);
 
   const editingStudent = students?.find((s) => s.uid === editingUid) ?? null;
+
+  function canManage(student: UserProfile): boolean {
+    return isAdmin || student.createdBy === user?.uid;
+  }
+
+  async function handleResetPassword(student: UserProfile) {
+    setResettingUid(student.uid);
+    setRowStatus((prev) => {
+      const next = { ...prev };
+      delete next[student.uid];
+      return next;
+    });
+    try {
+      const newPassword = await resetStudentPassword(student);
+      setRowStatus((prev) => ({
+        ...prev,
+        [student.uid]: {
+          kind: "success",
+          message: `Password reset to ${newPassword}. They must change it at next login.`,
+        },
+      }));
+    } catch (err) {
+      setRowStatus((prev) => ({ ...prev, [student.uid]: { kind: "error", message: friendlyError(err) } }));
+    } finally {
+      setResettingUid(null);
+    }
+  }
+
+  async function handleSendResetEmail(student: UserProfile) {
+    setResettingUid(student.uid);
+    try {
+      await sendManagedPasswordResetEmail(student.email);
+      setRowStatus((prev) => ({
+        ...prev,
+        [student.uid]: { kind: "success", message: `Password reset email sent to ${student.email}.` },
+      }));
+    } catch (err) {
+      setRowStatus((prev) => ({ ...prev, [student.uid]: { kind: "error", message: friendlyError(err) } }));
+    } finally {
+      setResettingUid(null);
+    }
+  }
 
   const schoolOptions = useMemo(() => {
     const schools = new Set<string>();
@@ -399,7 +444,10 @@ function StudentsPageContent() {
           <div className="profile-card-head">
             <div>
               <h2>Add a student</h2>
-              <p>Their password is generated automatically: firstname.lastname.school.2026</p>
+              <p>
+                Their password is generated automatically: Firstname.Lastname — they&apos;ll be required to
+                change it the first time they sign in.
+              </p>
             </div>
           </div>
           <AddStudentForm onCreated={reload} />
@@ -469,7 +517,6 @@ function StudentsPageContent() {
                     <th>Name</th>
                     <th>Email</th>
                     <th>School</th>
-                    {isAdmin && <th>Password</th>}
                     <th></th>
                   </tr>
                 </thead>
@@ -479,20 +526,44 @@ function StudentsPageContent() {
                       <td className="roster-name-cell">{student.displayName}</td>
                       <td>{student.email}</td>
                       <td>{student.school ?? "—"}</td>
-                      {isAdmin && <td><PasswordReveal password={student.password} /></td>}
                       <td>
-                        {isAdmin || student.createdBy === user?.uid ? (
-                          <button
-                            type="button"
-                            className="roster-edit-btn"
-                            aria-label={`Edit ${student.displayName}`}
-                            title="Edit"
-                            onClick={() => setEditingUid(student.uid)}
-                          >
-                            <EditIcon />
-                          </button>
+                        {canManage(student) ? (
+                          <div className="admin-row-actions">
+                            <button
+                              type="button"
+                              className="roster-edit-btn"
+                              aria-label={`Edit ${student.displayName}`}
+                              title="Edit"
+                              onClick={() => setEditingUid(student.uid)}
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-link-btn"
+                              onClick={() => handleResetPassword(student)}
+                              disabled={resettingUid === student.uid}
+                            >
+                              {resettingUid === student.uid ? "Resetting…" : "Reset password"}
+                            </button>
+                            {rowStatus[student.uid]?.kind === "error" && (
+                              <button
+                                type="button"
+                                className="admin-link-btn"
+                                onClick={() => handleSendResetEmail(student)}
+                                disabled={resettingUid === student.uid}
+                              >
+                                Send reset email
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <span className="admin-empty">—</span>
+                        )}
+                        {rowStatus[student.uid] && (
+                          <div className={`admin-status ${rowStatus[student.uid].kind} admin-row-error`}>
+                            {rowStatus[student.uid].message}
+                          </div>
                         )}
                       </td>
                     </tr>

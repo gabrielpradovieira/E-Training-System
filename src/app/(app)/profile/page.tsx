@@ -10,7 +10,6 @@ export default function ProfilePage() {
   const email = profile?.email || user?.email || "—";
   const school = profile?.school || "—";
   const role = profile?.role === "admin" ? "Admin" : profile?.role === "teacher" ? "Teacher" : "Student";
-  const canChangeOwnPassword = profile?.role === "teacher" || profile?.role === "admin";
 
   const fields = [
     { label: "Full name", value: displayName },
@@ -45,17 +44,15 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {canChangeOwnPassword && (
-          <section className="profile-card glass">
-            <div className="profile-card-head">
-              <div>
-                <h2>Change password</h2>
-                <p>Set a new password for your own account.</p>
-              </div>
+        <section className="profile-card glass">
+          <div className="profile-card-head">
+            <div>
+              <h2>Change password</h2>
+              <p>Set a new password for your own account.</p>
             </div>
-            <ChangePasswordForm />
-          </section>
-        )}
+          </div>
+          <ChangePasswordForm />
+        </section>
       </div>
     </main>
   );

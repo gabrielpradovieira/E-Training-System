@@ -13,7 +13,6 @@ import {
 import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
-import PasswordReveal from "@/components/dashboard/PasswordReveal";
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code;
@@ -142,7 +141,6 @@ function EditTeacherPanel({
 }) {
   const [displayName, setDisplayName] = useState(teacher.displayName);
   const [school, setSchool] = useState(teacher.school ?? "");
-  const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
@@ -153,11 +151,8 @@ function EditTeacherPanel({
     try {
       await updateTeacher({
         uid: teacher.uid,
-        currentEmail: teacher.email,
-        currentPassword: teacher.password,
         displayName: displayName.trim(),
         school: school.trim() || undefined,
-        newPassword: newPassword.trim() || undefined,
       });
       onDone();
     } catch (err) {
@@ -194,18 +189,11 @@ function EditTeacherPanel({
               onChange={(e) => setSchool(e.target.value)}
             />
           </div>
-          <div className="admin-field">
-            <label htmlFor="edit-teacher-password">New password</label>
-            <input
-              id="edit-teacher-password"
-              type="text"
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Leave blank to keep current password"
-            />
-          </div>
         </div>
+        <p className="csv-hint">
+          Password can&apos;t be viewed or set here — use &quot;Reset password&quot; to reset it back to the
+          default (Firstname.Lastname).
+        </p>
         {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
         <div className="admin-row-actions">
           <button className="admin-submit-btn" type="submit" disabled={busy}>
@@ -392,7 +380,6 @@ function AdminPageContent() {
                     <th>Name</th>
                     <th>Email</th>
                     <th>School</th>
-                    <th>Password</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -402,7 +389,6 @@ function AdminPageContent() {
                       <td>{teacher.displayName}</td>
                       <td>{teacher.email}</td>
                       <td>{teacher.school ?? "—"}</td>
-                      <td><PasswordReveal password={teacher.password} /></td>
                       <td>
                         <div className="admin-row-actions">
                           <button
