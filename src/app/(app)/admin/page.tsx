@@ -11,6 +11,7 @@ import {
   updateTeacher,
 } from "@/lib/data";
 import { generateTeacherPassword } from "@/lib/generated-password";
+import { sendInviteEmail } from "@/lib/email-invite";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
 import RosterActionMenu from "@/components/dashboard/RosterActionMenu";
@@ -58,9 +59,12 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
         createdByUid: user.uid,
       });
       onCreated();
+      const emailSent = await sendInviteEmail({ displayName, email, password, role: "teacher" });
       setStatus({
         kind: "success",
-        message: `Teacher account created for ${displayName}. Password: ${password} (they can change it later in their own account settings).`,
+        message: emailSent
+          ? `Teacher account created for ${displayName}. An invite email with their login was sent to ${email}.`
+          : `Teacher account created for ${displayName}. Password: ${password} (couldn't send the invite email automatically — share this password with them directly).`,
       });
       setFirstName("");
       setLastName("");

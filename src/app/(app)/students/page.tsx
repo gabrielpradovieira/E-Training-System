@@ -11,6 +11,7 @@ import {
   updateStudent,
 } from "@/lib/data";
 import { generateStudentPassword } from "@/lib/generated-password";
+import { sendInviteEmail } from "@/lib/email-invite";
 import { downloadStudentCsvTemplate, parseStudentCsv, type StudentCsvRow } from "@/lib/csv";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
@@ -55,7 +56,18 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
         createdByUid: user.uid,
       });
       onCreated();
-      setStatus({ kind: "success", message: `Student account created. Password: ${password}` });
+      const emailSent = await sendInviteEmail({
+        displayName: fullName.trim(),
+        email,
+        password,
+        role: "student",
+      });
+      setStatus({
+        kind: "success",
+        message: emailSent
+          ? `Student account created. An invite email with their login was sent to ${email}.`
+          : `Student account created. Password: ${password} (couldn't send the invite email automatically — share this password with them directly).`,
+      });
       setFullName("");
       setEmail("");
       setSchool("");
@@ -160,6 +172,12 @@ function CsvUploadForm({ onCreated }: { onCreated: () => void }) {
           role: "student",
           school: rows[i].school,
           createdByUid: user.uid,
+        });
+        await sendInviteEmail({
+          displayName: rows[i].fullName,
+          email: rows[i].email,
+          password: rows[i].password,
+          role: "student",
         });
         setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: "done" } : r)));
       } catch (err) {
