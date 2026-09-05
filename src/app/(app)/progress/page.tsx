@@ -39,11 +39,43 @@ function StatCard({ label, value, sublabel }: { label: string; value: string; su
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="8" y1="12" x2="16" y2="12"></line>
+      <line x1="11" y1="18" x2="13" y2="18"></line>
+    </svg>
+  );
+}
+
+function ViewTasksIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m4 7 1.5 1.5L8 6" />
+      <path d="m4 13 1.5 1.5L8 12" />
+      <path d="M11 7h9" />
+      <path d="M11 13h9" />
+      <path d="M4 19h16" />
+    </svg>
+  );
+}
+
 function ProgressPageContent() {
   const { isAdmin, profile } = useAuth();
   const [rows, setRows] = useState<StudentRow[] | null>(null);
   const [totalTasks, setTotalTasks] = useState(0);
   const [schoolFilter, setSchoolFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [failedCount, setFailedCount] = useState(0);
 
   useEffect(() => {
@@ -91,9 +123,18 @@ function ProgressPageContent() {
   }, [rows]);
 
   const visibleRows = useMemo(() => {
-    if (!schoolFilter) return rows ?? [];
-    return (rows ?? []).filter((r) => r.student.school === schoolFilter);
-  }, [rows, schoolFilter]);
+    let list = rows ?? [];
+    if (schoolFilter) list = list.filter((r) => r.student.school === schoolFilter);
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      list = list.filter(
+        (r) =>
+          r.student.displayName.toLowerCase().includes(query) ||
+          r.student.email.toLowerCase().includes(query),
+      );
+    }
+    return list;
+  }, [rows, schoolFilter, searchQuery]);
 
   const stats = useMemo(() => {
     const list = visibleRows;
@@ -152,19 +193,32 @@ function ProgressPageContent() {
           )}
         </section>
 
-        <section className="profile-card glass">
+        <section className="profile-card glass roster-card">
           <div className="profile-card-head">
             <div>
               <h2>Students Progress</h2>
               <p>{isAdmin ? "Every student in the system." : "Students at your school."}</p>
             </div>
+          </div>
+
+          <div className="roster-toolbar">
+            <div className="roster-search">
+              <SearchIcon />
+              <input
+                type="search"
+                placeholder="Search by name or email…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search students"
+              />
+            </div>
             {schoolOptions.length > 1 && (
-              <div className="admin-field admin-filter-field">
-                <label htmlFor="progress-school-filter">Filter by school</label>
+              <div className="roster-filter">
+                <FilterIcon />
                 <select
-                  id="progress-school-filter"
                   value={schoolFilter}
                   onChange={(e) => setSchoolFilter(e.target.value)}
+                  aria-label="Filter by school"
                 >
                   <option value="">All schools</option>
                   {schoolOptions.map((school) => (
@@ -175,13 +229,13 @@ function ProgressPageContent() {
             )}
           </div>
 
-          <div className="admin-table-wrap">
+          <div className="roster-table-wrap">
             {rows === null ? (
               <p className="admin-empty">Loading…</p>
             ) : visibleRows.length === 0 ? (
-              <p className="admin-empty">No students yet.</p>
+              <p className="admin-empty">No students match your search.</p>
             ) : (
-              <table className="admin-table">
+              <table className="roster-table">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -196,7 +250,7 @@ function ProgressPageContent() {
                 <tbody>
                   {visibleRows.map((row) => (
                     <tr key={row.student.uid}>
-                      <td>{row.student.displayName}</td>
+                      <td className="roster-name-cell">{row.student.displayName}</td>
                       <td>{row.student.school ?? "—"}</td>
                       <td>
                         <div className="progress-cell">
@@ -210,7 +264,8 @@ function ProgressPageContent() {
                       {totalTasks > 0 && <td>{row.tasksCompleted}/{totalTasks}</td>}
                       <td>{formatLastActive(row.progress?.updatedAt)}</td>
                       <td>
-                        <Link href={`/progress/${row.student.uid}`} className="admin-link-btn">
+                        <Link href={`/progress/${row.student.uid}`} className="roster-view-tasks-btn">
+                          <ViewTasksIcon />
                           View tasks
                         </Link>
                       </td>

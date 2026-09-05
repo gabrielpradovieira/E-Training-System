@@ -5035,6 +5035,35 @@
       color: var(--blue);
     }
 
+    .roster-view-tasks-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, var(--nav-1), var(--nav-2));
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .roster-view-tasks-btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .roster-view-tasks-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      opacity: 0.94;
+    }
+
     .progress-stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
