@@ -75,14 +75,26 @@ export async function fetchTaskCompletions(uid: string): Promise<Map<string, Tas
   return map;
 }
 
-/** Task completions for many users at once, keyed by uid then task id. */
+/**
+ * Task completions for many users at once, keyed by uid then task id.
+ * `failedUids` lists any reads that errored, so a permission problem
+ * doesn't silently masquerade as "this student completed nothing."
+ */
 export async function fetchTaskCompletionsForUsers(
   uids: string[],
-): Promise<Map<string, Map<string, TaskCompletion>>> {
+): Promise<{ data: Map<string, Map<string, TaskCompletion>>; failedUids: string[] }> {
+  const failedUids: string[] = [];
   const entries = await Promise.all(
-    uids.map(async (uid) => [uid, await fetchTaskCompletions(uid).catch(() => new Map<string, TaskCompletion>())] as const),
+    uids.map(async (uid) => {
+      try {
+        return [uid, await fetchTaskCompletions(uid)] as const;
+      } catch {
+        failedUids.push(uid);
+        return [uid, new Map<string, TaskCompletion>()] as const;
+      }
+    }),
   );
-  return new Map(entries);
+  return { data: new Map(entries), failedUids };
 }
 
 /** Marking a task complete requires the student's own submission link. */

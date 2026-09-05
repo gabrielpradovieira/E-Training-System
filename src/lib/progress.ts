@@ -30,10 +30,26 @@ export async function saveWatchedLessons(uid: string, watchedKeys: string[]): Pr
   await setDoc(progressRef(uid), { watchedKeys, updatedAt: Date.now() }, { merge: true });
 }
 
-/** Training progress for many users at once, keyed by uid (missing/never-started -> null). */
-export async function getTrainingProgressForUsers(uids: string[]): Promise<Map<string, TrainingProgress | null>> {
+/**
+ * Training progress for many users at once, keyed by uid (missing/
+ * never-started -> null). `failedUids` lists any reads that errored (e.g.
+ * a Firestore rules rejection) so callers can tell "genuinely no progress"
+ * apart from "couldn't read this student's progress" — both would
+ * otherwise look identical (null).
+ */
+export async function getTrainingProgressForUsers(
+  uids: string[],
+): Promise<{ data: Map<string, TrainingProgress | null>; failedUids: string[] }> {
+  const failedUids: string[] = [];
   const entries = await Promise.all(
-    uids.map(async (uid) => [uid, await getTrainingProgress(uid).catch(() => null)] as const),
+    uids.map(async (uid) => {
+      try {
+        return [uid, await getTrainingProgress(uid)] as const;
+      } catch {
+        failedUids.push(uid);
+        return [uid, null] as const;
+      }
+    }),
   );
-  return new Map(entries);
+  return { data: new Map(entries), failedUids };
 }

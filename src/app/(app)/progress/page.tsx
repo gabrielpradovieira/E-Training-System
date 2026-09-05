@@ -44,6 +44,7 @@ function ProgressPageContent() {
   const [rows, setRows] = useState<StudentRow[] | null>(null);
   const [totalTasks, setTotalTasks] = useState(0);
   const [schoolFilter, setSchoolFilter] = useState("");
+  const [failedCount, setFailedCount] = useState(0);
 
   useEffect(() => {
     if (!isAdmin && !profile?.school) return;
@@ -51,19 +52,21 @@ function ProgressPageContent() {
     fetchStudents(isAdmin ? {} : { school: profile?.school })
       .then(async (students) => {
         const uids = students.map((s) => s.uid);
-        const [progressByUid, allTasks, completionsByUid] = await Promise.all([
+        const [progressResult, allTasks, completionsResult] = await Promise.all([
           getTrainingProgressForUsers(uids),
           fetchAllTasks(),
           fetchTaskCompletionsForUsers(uids),
         ]);
         if (cancelled) return;
         setTotalTasks(allTasks.length);
+        const failedUids = new Set([...progressResult.failedUids, ...completionsResult.failedUids]);
+        setFailedCount(failedUids.size);
         const nextRows: StudentRow[] = students.map((student) => {
-          const progress = progressByUid.get(student.uid) ?? null;
+          const progress = progressResult.data.get(student.uid) ?? null;
           const videosCompleted = Math.min(progress?.watchedKeys?.length ?? 0, TOTAL_LESSONS);
           const percent = TOTAL_LESSONS ? Math.round((videosCompleted / TOTAL_LESSONS) * 100) : 0;
           const tasksCompleted = Math.min(
-            completionsByUid.get(student.uid)?.size ?? 0,
+            completionsResult.data.get(student.uid)?.size ?? 0,
             allTasks.length,
           );
           return { student, progress, videosCompleted, percent, tasksCompleted };
@@ -120,6 +123,13 @@ function ProgressPageContent() {
   return (
     <main id="progress" className="section active">
       <div className="profile-page">
+        {failedCount > 0 && (
+          <div className="admin-status error">
+            Couldn&apos;t load progress for {failedCount} student{failedCount === 1 ? "" : "s"} — their stats below
+            show as 0/blank rather than their real numbers. This is usually outdated Firestore security rules;
+            re-publish the latest <code>firestore.rules</code>.
+          </div>
+        )}
         <section className="progress-stats-grid">
           <StatCard label="Students" value={String(stats.totalStudents)} />
           <StatCard label="Average completion" value={`${stats.averagePercent}%`} />
