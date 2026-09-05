@@ -327,10 +327,17 @@ export default function TrainingPage() {
     : "Welcome to 3D Digital Game Art";
   const currentVideoId = currentLessonKey ? lessonVideoIds.get(currentLessonKey) : undefined;
 
+  /** Switching modules loads that module's first lesson into the player right away. */
   function changeLevel(level: CurriculumLevel) {
+    const levelSections = buildCurriculumForLevel(level);
+    const firstSection = levelSections[0];
+    const firstKey = firstSection ? `${firstSection.id}-0` : null;
     setActiveLevel(level);
-    setOpenTopics(new Set());
-    setCurrentLessonKey(null);
+    setOpenTopics(new Set(firstSection ? [firstSection.id] : []));
+    setCurrentLessonKey(firstKey);
+    if (user && progressLoaded && firstKey) {
+      saveTrainingProgress(user.uid, level, firstKey).catch(() => {});
+    }
   }
 
   function toggleTopic(topicId: string) {
