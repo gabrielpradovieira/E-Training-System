@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   createManagedUser,
+  deleteStudent,
   fetchStudents,
   resetStudentPassword,
   sendManagedPasswordResetEmail,
@@ -13,6 +14,7 @@ import { generateStudentPassword } from "@/lib/generated-password";
 import { downloadStudentCsvTemplate, parseStudentCsv, type StudentCsvRow } from "@/lib/csv";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
+import RosterActionMenu from "@/components/dashboard/RosterActionMenu";
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code;
@@ -342,15 +344,6 @@ function FilterIcon() {
   );
 }
 
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20h9"></path>
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-    </svg>
-  );
-}
-
 function StudentsPageContent() {
   const { isAdmin, user, profile } = useAuth();
   const [students, setStudents] = useState<UserProfile[] | null>(null);
@@ -358,6 +351,7 @@ function StudentsPageContent() {
   const [schoolFilter, setSchoolFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [resettingUid, setResettingUid] = useState<string | null>(null);
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
   const [rowStatus, setRowStatus] = useState<Record<string, { kind: "success" | "error"; message: string }>>({});
 
   function reload() {
@@ -414,6 +408,35 @@ function StudentsPageContent() {
       setRowStatus((prev) => ({ ...prev, [student.uid]: { kind: "error", message: friendlyError(err) } }));
     } finally {
       setResettingUid(null);
+    }
+  }
+
+  async function handleDelete(student: UserProfile) {
+    const confirmed = window.confirm(`Remove ${student.displayName}'s student account? This can't be undone.`);
+    if (!confirmed) return;
+    setDeletingUid(student.uid);
+    setRowStatus((prev) => {
+      const next = { ...prev };
+      delete next[student.uid];
+      return next;
+    });
+    try {
+      const { authDeleted } = await deleteStudent(student);
+      if (editingUid === student.uid) setEditingUid(null);
+      reload();
+      if (!authDeleted) {
+        setRowStatus((prev) => ({
+          ...prev,
+          [student.uid]: {
+            kind: "error",
+            message: `${student.displayName}'s account was removed, but its sign-in couldn't be removed automatically (stale password on file) — remove it by hand in Firebase Console → Authentication if it must be fully gone.`,
+          },
+        }));
+      }
+    } catch (err) {
+      setRowStatus((prev) => ({ ...prev, [student.uid]: { kind: "error", message: friendlyError(err) } }));
+    } finally {
+      setDeletingUid(null);
     }
   }
 
@@ -528,35 +551,32 @@ function StudentsPageContent() {
                       <td>{student.school ?? "—"}</td>
                       <td>
                         {canManage(student) ? (
-                          <div className="admin-row-actions">
-                            <button
-                              type="button"
-                              className="roster-edit-btn"
-                              aria-label={`Edit ${student.displayName}`}
-                              title="Edit"
-                              onClick={() => setEditingUid(student.uid)}
-                            >
-                              <EditIcon />
-                            </button>
-                            <button
-                              type="button"
-                              className="admin-link-btn"
-                              onClick={() => handleResetPassword(student)}
-                              disabled={resettingUid === student.uid}
-                            >
-                              {resettingUid === student.uid ? "Resetting…" : "Reset password"}
-                            </button>
-                            {rowStatus[student.uid]?.kind === "error" && (
-                              <button
-                                type="button"
-                                className="admin-link-btn"
-                                onClick={() => handleSendResetEmail(student)}
-                                disabled={resettingUid === student.uid}
-                              >
-                                Send reset email
-                              </button>
-                            )}
-                          </div>
+                          <RosterActionMenu
+                            label={`Actions for ${student.displayName}`}
+                            actions={[
+                              { label: "Edit", onClick: () => setEditingUid(student.uid) },
+                              {
+                                label: resettingUid === student.uid ? "Resetting…" : "Reset password",
+                                onClick: () => handleResetPassword(student),
+                                disabled: resettingUid === student.uid,
+                              },
+                              ...(rowStatus[student.uid]?.kind === "error"
+                                ? [
+                                    {
+                                      label: "Send reset email",
+                                      onClick: () => handleSendResetEmail(student),
+                                      disabled: resettingUid === student.uid,
+                                    },
+                                  ]
+                                : []),
+                              {
+                                label: deletingUid === student.uid ? "Removing…" : "Remove student",
+                                onClick: () => handleDelete(student),
+                                disabled: deletingUid === student.uid,
+                                danger: true,
+                              },
+                            ]}
+                          />
                         ) : (
                           <span className="admin-empty">—</span>
                         )}

@@ -280,6 +280,30 @@ export async function deleteTeacher(teacher: UserProfile): Promise<{ authDeleted
   return { authDeleted };
 }
 
+/**
+ * Deletes a student account: signs into it (using its current password on
+ * file) with the secondary auth instance to remove the real Firebase Auth
+ * account, then removes its Firestore profile. Same caveat as
+ * {@link deleteTeacher}: if the stored password no longer matches (or none
+ * is on file) the Auth account can't be removed this way, but the profile
+ * is still deleted so the student immediately loses all access.
+ */
+export async function deleteStudent(student: UserProfile): Promise<{ authDeleted: boolean }> {
+  let authDeleted = false;
+  if (student.password) {
+    const secondaryAuth = getSecondaryAuth();
+    try {
+      const cred = await signInWithEmailAndPassword(secondaryAuth, student.email, student.password);
+      await deleteUser(cred.user);
+      authDeleted = true;
+    } catch {
+      await fbSignOut(secondaryAuth).catch(() => {});
+    }
+  }
+  await deleteDoc(doc(db, "users", student.uid));
+  return { authDeleted };
+}
+
 /** All teacher accounts (admin only, per security rules). */
 export async function fetchTeachers(): Promise<UserProfile[]> {
   const snap = await getDocs(query(collection(db, "users"), where("role", "==", "teacher")));

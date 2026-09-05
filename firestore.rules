@@ -103,7 +103,11 @@ service cloud.firestore {
                         && resource.data.createdBy == request.auth.uid
                         && request.resource.data.role == 'student'
                         && request.resource.data.createdBy == request.auth.uid);
-      allow delete: if isAdmin();
+      // A teacher may also delete a student account they created.
+      allow delete: if isAdmin()
+                    || (isTeacher()
+                        && resource.data.role == 'student'
+                        && resource.data.createdBy == request.auth.uid);
 
       match /{sub=**} {
         // A teacher may also read (never write) a same-school student's
