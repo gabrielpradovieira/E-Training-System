@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { fetchStudentProfile } from "@/lib/data";
-import { fetchAllTasks, fetchTaskCompletions, type LessonTask, type TaskCompletion } from "@/lib/tasks";
+import {
+  buildTaskOrdinals,
+  fetchAllTasks,
+  fetchTaskCompletions,
+  formatTaskNumber,
+  sortTasksByOrder,
+  type LessonTask,
+  type TaskCompletion,
+} from "@/lib/tasks";
 import { buildLessonInfoMap, curriculumLevelLabels } from "@/lib/curriculum";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
@@ -15,11 +23,34 @@ function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="8" y1="12" x2="16" y2="12"></line>
+      <line x1="11" y1="18" x2="13" y2="18"></line>
+    </svg>
+  );
+}
+
+type StatusFilter = "all" | "submitted" | "pending";
+
 function StudentTasksContent({ uid }: { uid: string }) {
   const [student, setStudent] = useState<UserProfile | null | undefined>(undefined);
   const [tasks, setTasks] = useState<LessonTask[] | null>(null);
   const [completions, setCompletions] = useState<Map<string, TaskCompletion>>(new Map());
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -41,17 +72,35 @@ function StudentTasksContent({ uid }: { uid: string }) {
     };
   }, [uid]);
 
-  const { submitted, pending } = useMemo(() => {
-    const submittedList: { task: LessonTask; completion: TaskCompletion }[] = [];
-    const pendingList: LessonTask[] = [];
-    (tasks ?? []).forEach((task) => {
-      const completion = completions.get(task.id);
-      if (completion) submittedList.push({ task, completion });
-      else pendingList.push(task);
-    });
-    submittedList.sort((a, b) => b.completion.completedAt - a.completion.completedAt);
-    return { submitted: submittedList, pending: pendingList };
+  const taskOrdinals = useMemo(() => buildTaskOrdinals(tasks ?? []), [tasks]);
+
+  const orderedRows = useMemo(() => {
+    return sortTasksByOrder(tasks ?? []).map((task) => ({
+      task,
+      completion: completions.get(task.id) ?? null,
+    }));
   }, [tasks, completions]);
+
+  const submittedCount = orderedRows.filter((r) => r.completion).length;
+  const pendingCount = orderedRows.length - submittedCount;
+
+  const visibleRows = useMemo(() => {
+    let list = orderedRows;
+    if (statusFilter === "submitted") list = list.filter((r) => r.completion);
+    if (statusFilter === "pending") list = list.filter((r) => !r.completion);
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      list = list.filter((r) => {
+        const info = LESSON_INFO.get(r.task.lessonKey);
+        return (
+          r.task.name.toLowerCase().includes(query) ||
+          info?.label.toLowerCase().includes(query) ||
+          info?.sectionTitle.toLowerCase().includes(query)
+        );
+      });
+    }
+    return list;
+  }, [orderedRows, statusFilter, searchQuery]);
 
   if (student === undefined || tasks === null) {
     return (
@@ -90,104 +139,103 @@ function StudentTasksContent({ uid }: { uid: string }) {
           </div>
           <div className="progress-stats-grid">
             <div className="progress-stat-card glass">
-              <span className="progress-stat-value">{submitted.length}</span>
+              <span className="progress-stat-value">{submittedCount}</span>
               <span className="progress-stat-label">Submitted</span>
             </div>
             <div className="progress-stat-card glass">
-              <span className="progress-stat-value">{pending.length}</span>
+              <span className="progress-stat-value">{pendingCount}</span>
               <span className="progress-stat-label">To do</span>
             </div>
             <div className="progress-stat-card glass">
-              <span className="progress-stat-value">{tasks.length}</span>
+              <span className="progress-stat-value">{orderedRows.length}</span>
               <span className="progress-stat-label">Total tasks</span>
             </div>
           </div>
         </section>
 
-        <section className="profile-card glass">
+        <section className="profile-card glass roster-card">
           <div className="profile-card-head">
             <div>
-              <h2>Submitted tasks</h2>
-              <p>Tasks this student has already submitted, most recent first.</p>
+              <h2>Tasks</h2>
+              <p>Every task assigned to this student, in curriculum order.</p>
             </div>
           </div>
-          {submitted.length === 0 ? (
-            <p className="admin-empty">No tasks submitted yet.</p>
-          ) : (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
+
+          <div className="roster-toolbar">
+            <div className="roster-search">
+              <SearchIcon />
+              <input
+                type="search"
+                placeholder="Search by task or lesson…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search tasks"
+              />
+            </div>
+            <div className="roster-filter">
+              <FilterIcon />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                aria-label="Filter by status"
+              >
+                <option value="all">All statuses</option>
+                <option value="submitted">Submitted</option>
+                <option value="pending">To do</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="roster-table-wrap">
+            {orderedRows.length === 0 ? (
+              <p className="admin-empty">No tasks exist yet.</p>
+            ) : visibleRows.length === 0 ? (
+              <p className="admin-empty">No tasks match your search.</p>
+            ) : (
+              <table className="roster-table">
                 <thead>
                   <tr>
+                    <th>#</th>
                     <th>Task</th>
                     <th>Lesson</th>
-                    <th>Submission</th>
+                    <th>Status</th>
+                    <th>Link</th>
                     <th>Submitted</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {submitted.map(({ task, completion }) => {
+                  {visibleRows.map(({ task, completion }) => {
                     const info = LESSON_INFO.get(task.lessonKey);
                     return (
                       <tr key={task.id}>
-                        <td>{task.name}</td>
+                        <td className="task-number-cell">{formatTaskNumber(taskOrdinals.get(task.id) ?? 0)}</td>
+                        <td className="roster-name-cell">{task.name}</td>
                         <td>
                           {info ? `${curriculumLevelLabels[info.level]} · ${info.sectionTitle} · ${info.label}` : "—"}
                         </td>
                         <td>
-                          <a href={completion.link} target="_blank" rel="noopener noreferrer" className="admin-link-btn">
-                            View submission
+                          <span className={`task-status-pill${completion ? " submitted" : " pending"}`}>
+                            {completion ? "Submitted" : "To do"}
+                          </span>
+                        </td>
+                        <td>
+                          <a
+                            href={completion ? completion.link : task.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="admin-link-btn"
+                          >
+                            {completion ? "View submission" : "Open task"}
                           </a>
                         </td>
-                        <td>{formatDate(completion.completedAt)}</td>
+                        <td>{completion ? formatDate(completion.completedAt) : "—"}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-            </div>
-          )}
-        </section>
-
-        <section className="profile-card glass">
-          <div className="profile-card-head">
-            <div>
-              <h2>Tasks still to do</h2>
-              <p>Tasks assigned to this student that haven&apos;t been submitted yet.</p>
-            </div>
+            )}
           </div>
-          {pending.length === 0 ? (
-            <p className="admin-empty">{tasks.length === 0 ? "No tasks exist yet." : "All tasks submitted."}</p>
-          ) : (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Lesson</th>
-                    <th>Link</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pending.map((task) => {
-                    const info = LESSON_INFO.get(task.lessonKey);
-                    return (
-                      <tr key={task.id}>
-                        <td>{task.name}</td>
-                        <td>
-                          {info ? `${curriculumLevelLabels[info.level]} · ${info.sectionTitle} · ${info.label}` : "—"}
-                        </td>
-                        <td>
-                          <a href={task.link} target="_blank" rel="noopener noreferrer" className="admin-link-btn">
-                            Open task
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </section>
       </div>
     </main>

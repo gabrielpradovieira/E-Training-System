@@ -5252,6 +5252,33 @@
       text-align: right;
     }
 
+    .task-number-cell {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .task-status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .task-status-pill.submitted {
+      background: rgba(34, 154, 94, 0.14);
+      color: #1c8a54;
+    }
+
+    .task-status-pill.pending {
+      background: rgba(214, 158, 46, 0.16);
+      color: #b3781f;
+    }
+
     .admin-field-hint {
       text-transform: none;
       font-weight: 400;

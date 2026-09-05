@@ -14,10 +14,12 @@ import { bunnyEmbedUrl } from "@/lib/bunny";
 import { useAuth } from "@/lib/auth-context";
 import { getTrainingProgress, saveTrainingProgress, saveWatchedLessons } from "@/lib/progress";
 import {
+  buildTaskOrdinals,
   createTask,
   deleteTask,
+  fetchAllTasks,
   fetchTaskCompletions,
-  fetchTasksForLevel,
+  formatTaskNumber,
   markTaskCompleted,
   unmarkTaskCompleted,
   type LessonTask,
@@ -284,10 +286,12 @@ export default function TrainingPage() {
     };
   }, [user]);
 
-  // Tasks attached to lessons in the active level.
+  // Every task in the system (not just the active level) — needed so task
+  // numbering ("Task 01", "Task 02", ...) stays continuous across both
+  // levels, the same way video numbering does.
   useEffect(() => {
     let cancelled = false;
-    fetchTasksForLevel(activeLevel)
+    fetchAllTasks()
       .then((list) => {
         if (!cancelled) setTasks(list);
       })
@@ -297,7 +301,9 @@ export default function TrainingPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeLevel]);
+  }, []);
+
+  const taskOrdinals = useMemo(() => buildTaskOrdinals(tasks), [tasks]);
 
   const sections = useMemo(() => buildCurriculumForLevel(activeLevel), [activeLevel]);
 
@@ -728,7 +734,9 @@ export default function TrainingPage() {
                                         <span className="curriculum-item-kind task">
                                           <TaskKindIcon />
                                         </span>
-                                        <span className="lesson-label">Task: {task.name}</span>
+                                        <span className="lesson-label">
+                                          Task {formatTaskNumber(taskOrdinals.get(task.id) ?? 0)}: {task.name}
+                                        </span>
                                       </a>
                                       <button
                                         type="button"

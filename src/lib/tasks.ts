@@ -1,8 +1,8 @@
 "use client";
 
-import { collection, deleteDoc, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import type { CurriculumLevel } from "@/lib/curriculum";
+import { buildGlobalLessonNumbers, type CurriculumLevel } from "@/lib/curriculum";
 
 export type LessonTask = {
   id: string;
@@ -24,10 +24,37 @@ function tasksCollection() {
   return collection(db, "tasks");
 }
 
-/** Every task attached to lessons in one curriculum level. */
-export async function fetchTasksForLevel(level: CurriculumLevel): Promise<LessonTask[]> {
-  const snap = await getDocs(query(tasksCollection(), where("level", "==", level)));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<LessonTask, "id">) }));
+// Position of each lesson in the curriculum (continuous across both levels)
+// — the basis for task ordering, since tasks are always pinned to a lesson.
+const LESSON_NUMBERS = buildGlobalLessonNumbers();
+
+/**
+ * Orders tasks by their lesson's position in the curriculum (continuous
+ * across both levels), then by creation time for multiple tasks pinned to
+ * the same lesson. This is the single source of task order used everywhere
+ * ("Task 01", "Task 02", ...) — since it's always derived, never stored,
+ * adding a new task automatically slots it into place and renumbers
+ * everything downstream without any manual reordering step.
+ */
+export function sortTasksByOrder(tasks: LessonTask[]): LessonTask[] {
+  return [...tasks].sort((a, b) => {
+    const an = LESSON_NUMBERS.get(a.lessonKey) ?? 0;
+    const bn = LESSON_NUMBERS.get(b.lessonKey) ?? 0;
+    if (an !== bn) return an - bn;
+    return a.createdAt - b.createdAt;
+  });
+}
+
+/** Task id -> its 1-based "Task 01" style ordinal, computed across ALL tasks in the system. */
+export function buildTaskOrdinals(allTasks: LessonTask[]): Map<string, number> {
+  const map = new Map<string, number>();
+  sortTasksByOrder(allTasks).forEach((task, index) => map.set(task.id, index + 1));
+  return map;
+}
+
+/** Formats a task ordinal as e.g. "01", "12". */
+export function formatTaskNumber(n: number): string {
+  return String(n).padStart(2, "0");
 }
 
 /** Every task in the system, across every level (for totals/stats). */
