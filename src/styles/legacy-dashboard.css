@@ -4659,7 +4659,8 @@
       letter-spacing: 0.3px;
     }
 
-    .admin-field input {
+    .admin-field input,
+    .admin-field select {
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 9px 12px;
@@ -4668,7 +4669,12 @@
       font-size: 0.9rem;
     }
 
-    .admin-field input:focus {
+    .admin-field select {
+      cursor: pointer;
+    }
+
+    .admin-field input:focus,
+    .admin-field select:focus {
       outline: none;
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(38, 128, 194, 0.12);

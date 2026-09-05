@@ -12,6 +12,7 @@ import {
 } from "@/lib/data";
 import { generateStudentPassword } from "@/lib/generated-password";
 import { sendInviteEmail } from "@/lib/email-invite";
+import { SCHOOLS } from "@/lib/schools";
 import { downloadStudentCsvTemplate, parseStudentCsv, type StudentCsvRow } from "@/lib/csv";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
@@ -115,16 +116,18 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
           />
         </div>
         <div className="admin-field">
-          <label htmlFor="student-school">
-            School <span className="admin-field-hint">(e.g. ATS Abu Dhabi - Girls)</span>
-          </label>
-          <input
+          <label htmlFor="student-school">School</label>
+          <select
             id="student-school"
-            type="text"
             required
             value={school}
             onChange={(e) => setSchool(e.target.value)}
-          />
+          >
+            <option value="" disabled>Select a school…</option>
+            {SCHOOLS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
       </div>
       {status && <div className={`admin-status ${status.kind}`}>{status.message}</div>}
@@ -329,13 +332,17 @@ function EditStudentPanel({
           </div>
           <div className="admin-field">
             <label htmlFor="edit-student-school">School</label>
-            <input
+            <select
               id="edit-student-school"
-              type="text"
               required
               value={school}
               onChange={(e) => setSchool(e.target.value)}
-            />
+            >
+              <option value="" disabled>Select a school…</option>
+              {SCHOOLS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
         </div>
         <p className="csv-hint">
