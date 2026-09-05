@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   buildCurriculumForLevel,
   buildGlobalLessonNumbers,
+  buildLessonInfoMap,
+  curriculum,
   curriculumLevelLabels,
   type CurriculumItemType,
   type CurriculumLevel,
@@ -34,6 +36,23 @@ const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = (
 // Continuous video numbering across both levels (Concept Art 1..N, then
 // 3D Modeling continues from there) — computed once, doesn't change at runtime.
 const GLOBAL_LESSON_NUMBERS = buildGlobalLessonNumbers();
+
+// Lesson label/video-id/level lookups across BOTH levels, not just the one
+// currently viewed — so a playing video keeps playing (title, iframe source,
+// module tag all still resolve) even after switching the level tab away
+// from it. Only clicking a lesson row/Prev/Next changes what's playing.
+const LESSON_INFO = buildLessonInfoMap();
+const GLOBAL_LESSON_LABELS = new Map<string, string>();
+const GLOBAL_LESSON_VIDEO_IDS = new Map<string, string>();
+(Object.keys(curriculum) as CurriculumLevel[]).forEach((level) => {
+  curriculum[level].forEach((sectionEntry) => {
+    sectionEntry.items.forEach((item, index) => {
+      const key = `${sectionEntry.id}-${index}`;
+      GLOBAL_LESSON_LABELS.set(key, item.label);
+      if (item.bunnyVideoId) GLOBAL_LESSON_VIDEO_IDS.set(key, item.bunnyVideoId);
+    });
+  });
+});
 
 function ItemKindIcon({ type }: { type: CurriculumItemType }) {
   void type;
@@ -291,24 +310,6 @@ export default function TrainingPage() {
     return keys;
   }, [sections]);
 
-  const lessonLabels = useMemo(() => {
-    const map = new Map<string, string>();
-    sections.forEach((sectionEntry) => {
-      sectionEntry.items.forEach((item, index) => map.set(`${sectionEntry.id}-${index}`, item.label));
-    });
-    return map;
-  }, [sections]);
-
-  const lessonVideoIds = useMemo(() => {
-    const map = new Map<string, string>();
-    sections.forEach((sectionEntry) => {
-      sectionEntry.items.forEach((item, index) => {
-        if (item.bunnyVideoId) map.set(`${sectionEntry.id}-${index}`, item.bunnyVideoId);
-      });
-    });
-    return map;
-  }, [sections]);
-
   const tasksByLesson = useMemo(() => {
     const map = new Map<string, LessonTask[]>();
     tasks.forEach((task) => {
@@ -322,22 +323,17 @@ export default function TrainingPage() {
   const currentIndex = currentLessonKey ? lessonKeys.indexOf(currentLessonKey) : -1;
   const totalLessons = lessonKeys.length;
 
-  const videoTitle = currentIndex >= 0 && currentLessonKey
-    ? lessonLabels.get(currentLessonKey) ?? "Welcome to 3D Digital Game Art"
+  const videoTitle = currentLessonKey
+    ? GLOBAL_LESSON_LABELS.get(currentLessonKey) ?? "Welcome to 3D Digital Game Art"
     : "Welcome to 3D Digital Game Art";
-  const currentVideoId = currentLessonKey ? lessonVideoIds.get(currentLessonKey) : undefined;
+  const currentVideoId = currentLessonKey ? GLOBAL_LESSON_VIDEO_IDS.get(currentLessonKey) : undefined;
+  const currentVideoLevel = currentLessonKey ? LESSON_INFO.get(currentLessonKey)?.level : undefined;
 
-  /** Switching modules loads that module's first lesson into the player right away. */
+  /** Switching tabs only changes which module's list is shown — the
+   * playing video (if any) keeps playing until a lesson is actually clicked. */
   function changeLevel(level: CurriculumLevel) {
-    const levelSections = buildCurriculumForLevel(level);
-    const firstSection = levelSections[0];
-    const firstKey = firstSection ? `${firstSection.id}-0` : null;
     setActiveLevel(level);
-    setOpenTopics(new Set(firstSection ? [firstSection.id] : []));
-    setCurrentLessonKey(firstKey);
-    if (user && progressLoaded && firstKey) {
-      saveTrainingProgress(user.uid, level, firstKey).catch(() => {});
-    }
+    setOpenTopics(new Set());
   }
 
   function toggleTopic(topicId: string) {
@@ -475,9 +471,9 @@ export default function TrainingPage() {
               </div>
               <div className="video-info">
                 <div className="video-copy">
-                  {currentLessonKey && (
+                  {currentLessonKey && currentVideoLevel && (
                     <p className="video-module-tag">
-                      {curriculumLevelLabels[activeLevel]} · {String(GLOBAL_LESSON_NUMBERS.get(currentLessonKey) ?? 0).padStart(2, "0")}
+                      {curriculumLevelLabels[currentVideoLevel]} · {String(GLOBAL_LESSON_NUMBERS.get(currentLessonKey) ?? 0).padStart(2, "0")}
                     </p>
                   )}
                   <h3 className="video-title">{videoTitle}</h3>
@@ -775,7 +771,7 @@ export default function TrainingPage() {
 
       {addTaskFor && (
         <AddTaskModal
-          lessonLabel={lessonLabels.get(addTaskFor) ?? "this lesson"}
+          lessonLabel={GLOBAL_LESSON_LABELS.get(addTaskFor) ?? "this lesson"}
           busy={addTaskBusy}
           status={addTaskStatus}
           onSubmit={handleAddTask}
