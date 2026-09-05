@@ -65,6 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [countdown, setCountdown] = useState("-- days left");
   const [completedCount, setCompletedCount] = useState(0);
   const [tasksTotal, setTasksTotal] = useState(0);
@@ -122,6 +123,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [user, pathname]);
 
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+  }
+
   const completionPercent = TOTAL_LESSONS
     ? Math.round((Math.min(completedCount, TOTAL_LESSONS) / TOTAL_LESSONS) * 100)
     : 0;
@@ -131,11 +136,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     : 0;
 
   return (
-    <div className={`app-container${collapsed ? " sidebar-collapsed" : ""}`}>
+    <div
+      className={`app-container${collapsed ? " sidebar-collapsed" : ""}${mobileMenuOpen ? " mobile-menu-open" : ""}`}
+    >
+      {mobileMenuOpen && (
+        <div className="mobile-nav-backdrop" onClick={() => setMobileMenuOpen(false)} aria-hidden="true" />
+      )}
       <aside className="nav-sidebar">
         <div className="sidebar-brand">
           <img className="brand-icon" src="/assets/icon-brand-computer.svg" alt="" aria-hidden="true" />
           <span className="brand-text">E-Training System</span>
+          <button
+            type="button"
+            className="mobile-menu-close-btn"
+            aria-label="Close menu"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
         </div>
 
         <nav className="sidebar-menu">
@@ -146,6 +167,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.slug}
                 href={`/${item.slug}`}
                 className={`menu-link${slug === item.slug ? " active" : ""}`}
+                onClick={closeMobileMenu}
               >
                 <img
                   className="link-icon sidebar-vector-icon"
@@ -160,6 +182,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 href="/students"
                 className={`menu-link${slug === "students" ? " active" : ""}`}
+                onClick={closeMobileMenu}
               >
                 <img
                   className="link-icon sidebar-vector-icon"
@@ -174,6 +197,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 href="/progress"
                 className={`menu-link${slug === "progress" ? " active" : ""}`}
+                onClick={closeMobileMenu}
               >
                 <img
                   className="link-icon sidebar-vector-icon"
@@ -188,6 +212,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 href="/admin"
                 className={`menu-link${slug === "admin" ? " active" : ""}`}
+                onClick={closeMobileMenu}
               >
                 <img
                   className="link-icon sidebar-vector-icon"
@@ -209,7 +234,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               id="profile-btn"
               type="button"
               aria-label="Profile"
-              onClick={() => router.push("/profile")}
+              onClick={() => {
+                closeMobileMenu();
+                router.push("/profile");
+              }}
             >
               <span className="profile-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -249,6 +277,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
                 <path d="m15 18-6-6 6-6"></path>
+              </svg>
+            </button>
+            <button
+              className="mobile-menu-btn"
+              type="button"
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 6h16" />
+                <path d="M4 12h16" />
+                <path d="M4 18h16" />
               </svg>
             </button>
             <div className="pgtop-identity">
