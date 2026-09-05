@@ -5261,9 +5261,10 @@
     .task-status-pill {
       display: inline-flex;
       align-items: center;
-      padding: 3px 10px;
+      white-space: nowrap;
+      padding: 4px 10px;
       border-radius: 999px;
-      font-size: 0.72rem;
+      font-size: 0.62rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.3px;
@@ -5285,7 +5286,10 @@
     }
 
     .task-level-header .curriculum-level-tabs {
+      display: inline-flex;
+      width: auto;
       flex-shrink: 0;
+      background: linear-gradient(135deg, var(--nav-1), var(--nav-2));
     }
 
     .admin-field-hint {
