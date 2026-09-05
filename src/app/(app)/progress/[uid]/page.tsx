@@ -13,11 +13,15 @@ import {
   type LessonTask,
   type TaskCompletion,
 } from "@/lib/tasks";
-import { buildLessonInfoMap, curriculumLevelLabels } from "@/lib/curriculum";
+import { buildLessonInfoMap, curriculumLevelLabels, type CurriculumLevel } from "@/lib/curriculum";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
 
 const LESSON_INFO = buildLessonInfoMap();
+
+const LEVEL_TABS: { level: CurriculumLevel; label: string }[] = (
+  Object.keys(curriculumLevelLabels) as CurriculumLevel[]
+).map((level) => ({ level, label: curriculumLevelLabels[level] }));
 
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -42,6 +46,16 @@ function FilterIcon() {
   );
 }
 
+function OpenLinkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+    </svg>
+  );
+}
+
 type StatusFilter = "all" | "submitted" | "pending";
 
 function StudentTasksContent({ uid }: { uid: string }) {
@@ -51,6 +65,7 @@ function StudentTasksContent({ uid }: { uid: string }) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [levelFilter, setLevelFilter] = useState<CurriculumLevel>("concept-art");
 
   useEffect(() => {
     let cancelled = false;
@@ -84,8 +99,13 @@ function StudentTasksContent({ uid }: { uid: string }) {
   const submittedCount = orderedRows.filter((r) => r.completion).length;
   const pendingCount = orderedRows.length - submittedCount;
 
+  const levelRows = useMemo(
+    () => orderedRows.filter((r) => r.task.level === levelFilter),
+    [orderedRows, levelFilter],
+  );
+
   const visibleRows = useMemo(() => {
-    let list = orderedRows;
+    let list = levelRows;
     if (statusFilter === "submitted") list = list.filter((r) => r.completion);
     if (statusFilter === "pending") list = list.filter((r) => !r.completion);
     const query = searchQuery.trim().toLowerCase();
@@ -100,7 +120,7 @@ function StudentTasksContent({ uid }: { uid: string }) {
       });
     }
     return list;
-  }, [orderedRows, statusFilter, searchQuery]);
+  }, [levelRows, statusFilter, searchQuery]);
 
   if (student === undefined || tasks === null) {
     return (
@@ -154,10 +174,24 @@ function StudentTasksContent({ uid }: { uid: string }) {
         </section>
 
         <section className="profile-card glass roster-card">
-          <div className="profile-card-head">
+          <div className="profile-card-head task-level-header">
             <div>
               <h2>Tasks</h2>
               <p>Every task assigned to this student, in curriculum order.</p>
+            </div>
+            <div className="curriculum-level-tabs" role="tablist" aria-label="Curriculum level filter">
+              {LEVEL_TABS.map((tab) => (
+                <button
+                  key={tab.level}
+                  className={`curriculum-level-tab${levelFilter === tab.level ? " active" : ""}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={levelFilter === tab.level}
+                  onClick={() => setLevelFilter(tab.level)}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -187,8 +221,8 @@ function StudentTasksContent({ uid }: { uid: string }) {
           </div>
 
           <div className="roster-table-wrap">
-            {orderedRows.length === 0 ? (
-              <p className="admin-empty">No tasks exist yet.</p>
+            {levelRows.length === 0 ? (
+              <p className="admin-empty">No tasks in this module yet.</p>
             ) : visibleRows.length === 0 ? (
               <p className="admin-empty">No tasks match your search.</p>
             ) : (
@@ -223,8 +257,9 @@ function StudentTasksContent({ uid }: { uid: string }) {
                             href={completion ? completion.link : task.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="admin-link-btn"
+                            className="roster-view-tasks-btn"
                           >
+                            <OpenLinkIcon />
                             {completion ? "View submission" : "Open task"}
                           </a>
                         </td>

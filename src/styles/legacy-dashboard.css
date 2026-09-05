@@ -5279,6 +5279,15 @@
       color: #b3781f;
     }
 
+    .task-level-header {
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .task-level-header .curriculum-level-tabs {
+      flex-shrink: 0;
+    }
+
     .admin-field-hint {
       text-transform: none;
       font-weight: 400;
