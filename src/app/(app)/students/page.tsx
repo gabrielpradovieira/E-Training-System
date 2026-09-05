@@ -34,7 +34,8 @@ function friendlyError(err: unknown): string {
 
 function AddStudentForm({ onCreated }: { onCreated: () => void }) {
   const { user } = useAuth();
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [school, setSchool] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,9 +47,10 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
     setStatus(null);
     setBusy(true);
     try {
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       const password = generateStudentPassword(fullName);
       await createManagedUser({
-        displayName: fullName.trim(),
+        displayName: fullName,
         email,
         password,
         role: "student",
@@ -57,7 +59,7 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
       });
       onCreated();
       const emailSent = await sendInviteEmail({
-        displayName: fullName.trim(),
+        displayName: fullName,
         email,
         password,
         role: "student",
@@ -68,7 +70,8 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
           ? `Student account created. An invite email with their login was sent to ${email}.`
           : `Student account created. Password: ${password} (couldn't send the invite email automatically — share this password with them directly).`,
       });
-      setFullName("");
+      setFirstName("");
+      setLastName("");
       setEmail("");
       setSchool("");
     } catch (err) {
@@ -82,13 +85,23 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
     <form className="admin-form" onSubmit={handleSubmit}>
       <div className="admin-form-grid">
         <div className="admin-field">
-          <label htmlFor="student-full-name">Full name</label>
+          <label htmlFor="student-first-name">First name</label>
           <input
-            id="student-full-name"
+            id="student-first-name"
             type="text"
             required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+        </div>
+        <div className="admin-field">
+          <label htmlFor="student-last-name">Last name</label>
+          <input
+            id="student-last-name"
+            type="text"
+            required
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
           />
         </div>
         <div className="admin-field">
