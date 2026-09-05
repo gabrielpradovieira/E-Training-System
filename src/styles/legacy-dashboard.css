@@ -5570,14 +5570,18 @@
 }
 
 /* =====================================================================
-   Mobile navigation & training-page redesign
+   Responsive navigation & training-page redesign (mobile + tablet)
    The old ≤720px behavior turned the sidebar into an unlabeled row of
    icons above the content — this replaces it with a proper off-canvas
-   drawer (hamburger button, slide-in panel, backdrop) and stacks the
-   training page in a sensible order. Appears after everything else in
-   the file so it wins the cascade over the legacy rules it supersedes;
-   !important is used defensively against a few of those older rules'
-   higher-specificity selectors.
+   drawer (hamburger button, slide-in panel, backdrop). The drawer nav
+   covers BOTH phones and tablets (≤1024px) — a fixed 240px sidebar has
+   no business permanently eating a third of an iPad's width — while
+   the training page's single-column stacking is mobile-only; tablets
+   keep the roomier two-column video/curriculum layout, just resized to
+   fit. Appears after everything else in the file so it wins the
+   cascade over the legacy rules it supersedes; !important is used
+   defensively against a few of those older rules' higher-specificity
+   selectors.
    ===================================================================== */
 
 .mobile-menu-btn,
@@ -5586,7 +5590,8 @@
   display: none;
 }
 
-@media (max-width: 760px) {
+/* ---- Drawer navigation: phones AND tablets (≤1024px) ---- */
+@media (max-width: 1024px) {
   .sidebar-toggle {
     display: none !important;
   }
@@ -5615,19 +5620,15 @@
   }
 
   .pgtop {
-    padding: 0 14px;
+    padding: 0 16px;
   }
 
   .pgtop-main {
-    gap: 10px;
+    gap: 12px;
   }
 
-  .pgtop-subtitle {
-    display: none;
-  }
-
-  .pgtop-title {
-    font-size: 1rem;
+  .pgtop-stats {
+    display: none !important;
   }
 
   /* Sidebar becomes an off-canvas drawer instead of a horizontal icon strip. */
@@ -5731,6 +5732,42 @@
 
   .main-wrapper {
     width: 100%;
+  }
+}
+
+/* ---- Tablet (761–1024px): keep the two-column training layout, just
+   resized — no reordering, plenty of room for it side by side. ---- */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .training-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 34vw) !important;
+    gap: 14px !important;
+  }
+
+  .curriculum-sidebar {
+    max-height: none !important;
+  }
+
+  main#training {
+    padding: 16px !important;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  }
+
+  .roster-toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+/* ---- Phone (≤760px): the training page collapses to one column. ---- */
+@media (max-width: 760px) {
+  .pgtop-subtitle {
+    display: none;
+  }
+
+  .pgtop-title {
+    font-size: 1rem;
   }
 
   /* Course curriculum: single column, and Training Resources moved to
