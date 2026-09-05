@@ -194,6 +194,32 @@ export function countAllLessons(): number {
   );
 }
 
+/** Combined run time (seconds) of every uploaded video across both levels. */
+export function totalCourseDurationSeconds(): number {
+  return (Object.keys(curriculum) as CurriculumLevel[]).reduce((total, level) => {
+    return (
+      total +
+      curriculum[level].reduce((sum, sectionEntry) => {
+        return (
+          sum +
+          sectionEntry.items.reduce((itemSum, item) => {
+            if (!item.bunnyVideoId) return itemSum;
+            return itemSum + (DURATION_SECONDS[item.bunnyVideoId] ?? 0);
+          }, 0)
+        );
+      }, 0)
+    );
+  }, 0);
+}
+
+/** Formats a seconds total as e.g. "3h 42m" or "48m". */
+export function formatCourseDuration(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.round((totalSeconds % 3600) / 60);
+  if (hours === 0) return `${minutes}m`;
+  return `${hours}h ${minutes}m`;
+}
+
 /**
  * Global video number for every lesson, counted continuously from the
  * first video of Concept Art through the last video of 3D Modeling —

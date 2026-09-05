@@ -5,17 +5,61 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getTrainingProgress } from "@/lib/progress";
 import { fetchAllTasks, fetchTaskCompletions } from "@/lib/tasks";
-import { countAllLessons, curriculumLevelLabels } from "@/lib/curriculum";
+import { countAllLessons, curriculumLevelLabels, formatCourseDuration, totalCourseDurationSeconds } from "@/lib/curriculum";
 
 const TOTAL_LESSONS = countAllLessons();
+const TOTAL_DURATION_LABEL = formatCourseDuration(totalCourseDurationSeconds());
 const COURSE_TITLE = "Skills Challenge Preparation Course 2026";
 const COURSE_MODULES = Object.values(curriculumLevelLabels);
+const COMPETITION_DATE = "22/10/2026";
 
 function CourseIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3 2 8l10 5 10-5-10-5Z" />
       <path d="M6 10.5V16c0 1 2.7 3 6 3s6-2 6-3v-5.5" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m10.5 9 4 3-4 3Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function ChecklistIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m4 7 1.5 1.5L8 6" />
+      <path d="m4 13 1.5 1.5L8 12" />
+      <path d="m4 19 1.5 1.5L8 17" />
+      <path d="M11 7h9" />
+      <path d="M11 13h9" />
+      <path d="M11 19h9" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+      <path d="M3 9.5h18" />
+      <path d="M8 2.5v4" />
+      <path d="M16 2.5v4" />
     </svg>
   );
 }
@@ -100,6 +144,15 @@ export default function HomePage() {
                 {COURSE_MODULES.map((mod) => (
                   <span key={mod} className="home-course-module-pill">{mod}</span>
                 ))}
+              </div>
+              <div className="home-course-details">
+                <span><PlayIcon />{TOTAL_LESSONS} lessons</span>
+                {tasksTotal > 0 && <span><ChecklistIcon />{tasksTotal} tasks</span>}
+                <span><ClockIcon />{TOTAL_DURATION_LABEL} total</span>
+              </div>
+              <div className="home-course-competition">
+                <CalendarIcon />
+                <span>Competition date: <strong>{COMPETITION_DATE}</strong></span>
               </div>
               <div className="home-course-progress-row">
                 <div className="progress-bar-track">
