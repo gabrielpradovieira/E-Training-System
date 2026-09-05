@@ -5,6 +5,11 @@ export type PageMeta = {
 };
 
 export const pageMeta: Record<string, PageMeta> = {
+  home: {
+    title: "Home",
+    icon: "/assets/icon-sidebar-home.svg",
+    description: "Your courses, progress, and tasks at a glance.",
+  },
   training: {
     title: "Training Material",
     icon: "/assets/icon-sidebar-training.svg",
@@ -33,5 +38,6 @@ export const pageMeta: Record<string, PageMeta> = {
 };
 
 export const navItems: { slug: string; label: string; icon: string }[] = [
+  { slug: "home", label: "Home", icon: "/assets/icon-sidebar-home.svg" },
   { slug: "training", label: "Training Material", icon: "/assets/icon-sidebar-training.svg" },
 ];
