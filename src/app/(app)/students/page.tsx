@@ -296,11 +296,40 @@ function EditStudentPanel({
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="8" y1="12" x2="16" y2="12"></line>
+      <line x1="11" y1="18" x2="13" y2="18"></line>
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+    </svg>
+  );
+}
+
 function StudentsPageContent() {
   const { isAdmin, user, profile } = useAuth();
   const [students, setStudents] = useState<UserProfile[] | null>(null);
   const [editingUid, setEditingUid] = useState<string | null>(null);
   const [schoolFilter, setSchoolFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   function reload() {
     if (!user) return;
@@ -326,9 +355,16 @@ function StudentsPageContent() {
   }, [students]);
 
   const visibleStudents = useMemo(() => {
-    if (!schoolFilter) return students ?? [];
-    return (students ?? []).filter((s) => s.school === schoolFilter);
-  }, [students, schoolFilter]);
+    let list = students ?? [];
+    if (schoolFilter) list = list.filter((s) => s.school === schoolFilter);
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      list = list.filter(
+        (s) => s.displayName.toLowerCase().includes(query) || s.email.toLowerCase().includes(query),
+      );
+    }
+    return list;
+  }, [students, schoolFilter, searchQuery]);
 
   return (
     <main id="students" className="section active">
@@ -346,19 +382,32 @@ function StudentsPageContent() {
           <CsvUploadForm onCreated={reload} />
         </section>
 
-        <section className="profile-card glass">
+        <section className="profile-card glass roster-card">
           <div className="profile-card-head">
             <div>
               <h2>Students</h2>
               <p>{isAdmin ? "Every student in the system." : "Students at your school."}</p>
             </div>
+          </div>
+
+          <div className="roster-toolbar">
+            <div className="roster-search">
+              <SearchIcon />
+              <input
+                type="search"
+                placeholder="Search by name or email…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search students"
+              />
+            </div>
             {schoolOptions.length > 1 && (
-              <div className="admin-field admin-filter-field">
-                <label htmlFor="student-school-filter">Filter by school</label>
+              <div className="roster-filter">
+                <FilterIcon />
                 <select
-                  id="student-school-filter"
                   value={schoolFilter}
                   onChange={(e) => setSchoolFilter(e.target.value)}
+                  aria-label="Filter by school"
                 >
                   <option value="">All schools</option>
                   {schoolOptions.map((school) => (
@@ -380,15 +429,15 @@ function StudentsPageContent() {
             />
           )}
 
-          <div className="admin-table-wrap">
+          <div className="roster-table-wrap">
             {students === null ? (
               <p className="admin-empty">Loading…</p>
             ) : students.length === 0 ? (
               <p className="admin-empty">No students yet.</p>
             ) : visibleStudents.length === 0 ? (
-              <p className="admin-empty">No students at this school.</p>
+              <p className="admin-empty">No students match your search.</p>
             ) : (
-              <table className="admin-table">
+              <table className="roster-table">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -401,7 +450,7 @@ function StudentsPageContent() {
                 <tbody>
                   {visibleStudents.map((student) => (
                     <tr key={student.uid}>
-                      <td>{student.displayName}</td>
+                      <td className="roster-name-cell">{student.displayName}</td>
                       <td>{student.email}</td>
                       <td>{student.school ?? "—"}</td>
                       {isAdmin && <td><PasswordReveal password={student.password} /></td>}
@@ -409,10 +458,12 @@ function StudentsPageContent() {
                         {isAdmin || student.createdBy === user?.uid ? (
                           <button
                             type="button"
-                            className="admin-link-btn"
+                            className="roster-edit-btn"
+                            aria-label={`Edit ${student.displayName}`}
+                            title="Edit"
                             onClick={() => setEditingUid(student.uid)}
                           >
-                            Edit
+                            <EditIcon />
                           </button>
                         ) : (
                           <span className="admin-empty">—</span>
