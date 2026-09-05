@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getTrainingProgress } from "@/lib/progress";
-import { fetchAllTasks, fetchTaskCompletions, type LessonTask } from "@/lib/tasks";
-import { buildLessonInfoMap, countAllLessons, curriculumLevelLabels } from "@/lib/curriculum";
+import { fetchAllTasks, fetchTaskCompletions } from "@/lib/tasks";
+import { countAllLessons, curriculumLevelLabels } from "@/lib/curriculum";
 
 const TOTAL_LESSONS = countAllLessons();
-const LESSON_INFO = buildLessonInfoMap();
 const COURSE_TITLE = "Skills Challenge Preparation Course 2026";
 const COURSE_MODULES = Object.values(curriculumLevelLabels);
 
@@ -24,9 +23,8 @@ function CourseIcon() {
 export default function HomePage() {
   const { user, profile } = useAuth();
   const [watchedCount, setWatchedCount] = useState(0);
-  const [allTasks, setAllTasks] = useState<LessonTask[]>([]);
-  const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(new Set());
-  const [loaded, setLoaded] = useState(false);
+  const [tasksTotal, setTasksTotal] = useState(0);
+  const [tasksCompletedCount, setTasksCompletedCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -35,13 +33,10 @@ export default function HomePage() {
       .then(([progress, tasks, completions]) => {
         if (cancelled) return;
         setWatchedCount(progress?.watchedKeys?.length ?? 0);
-        setAllTasks(tasks);
-        setCompletedTaskIds(new Set(completions.keys()));
+        setTasksTotal(tasks.length);
+        setTasksCompletedCount(completions.size);
       })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoaded(true);
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -49,12 +44,7 @@ export default function HomePage() {
 
   const videosCompleted = Math.min(watchedCount, TOTAL_LESSONS);
   const coursePercent = TOTAL_LESSONS ? Math.round((videosCompleted / TOTAL_LESSONS) * 100) : 0;
-  const tasksCompleted = Math.min(completedTaskIds.size, allTasks.length);
-
-  const pendingTasks = useMemo(
-    () => allTasks.filter((t) => !completedTaskIds.has(t.id)),
-    [allTasks, completedTaskIds],
-  );
+  const tasksCompleted = Math.min(tasksCompletedCount, tasksTotal);
 
   const displayName = profile?.displayName || user?.displayName || "there";
   const firstName = displayName.split(" ")[0];
@@ -91,79 +81,41 @@ export default function HomePage() {
             <span className="progress-stat-label">Videos completed</span>
           </div>
           <div className="progress-stat-card glass">
-            <span className="progress-stat-value">{tasksCompleted}/{allTasks.length}</span>
+            <span className="progress-stat-value">{tasksCompleted}/{tasksTotal}</span>
             <span className="progress-stat-label">Tasks completed</span>
-          </div>
-          <div className="progress-stat-card glass">
-            <span className="progress-stat-value">{pendingTasks.length}</span>
-            <span className="progress-stat-label">Tasks to be done</span>
           </div>
         </section>
 
-        <div className="home-columns">
-          <section className="home-course-section">
-            <div className="home-section-head">
-              <h2>My Courses</h2>
+        <section className="home-course-section">
+          <div className="home-section-head">
+            <h2>My Courses</h2>
+          </div>
+          <Link href="/training" className="home-course-card glass">
+            <div className="home-course-banner">
+              <CourseIcon />
             </div>
-            <Link href="/training" className="home-course-card glass">
-              <div className="home-course-banner">
-                <CourseIcon />
+            <div className="home-course-body">
+              <h3>{COURSE_TITLE}</h3>
+              <div className="home-course-modules">
+                {COURSE_MODULES.map((mod) => (
+                  <span key={mod} className="home-course-module-pill">{mod}</span>
+                ))}
               </div>
-              <div className="home-course-body">
-                <h3>{COURSE_TITLE}</h3>
-                <div className="home-course-modules">
-                  {COURSE_MODULES.map((mod) => (
-                    <span key={mod} className="home-course-module-pill">{mod}</span>
-                  ))}
+              <div className="home-course-progress-row">
+                <div className="progress-bar-track">
+                  <div className="progress-bar-fill" style={{ width: `${coursePercent}%` }} />
                 </div>
-                <div className="home-course-progress-row">
-                  <div className="progress-bar-track">
-                    <div className="progress-bar-fill" style={{ width: `${coursePercent}%` }} />
-                  </div>
-                  <span className="progress-cell-value">{coursePercent}%</span>
-                </div>
-                <span className="home-course-cta">
-                  {videosCompleted === 0 ? "Start course" : coursePercent >= 100 ? "Review course" : "Continue learning"}
-                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </span>
+                <span className="progress-cell-value">{coursePercent}%</span>
               </div>
-            </Link>
-          </section>
-
-          <section className="home-tasks-section">
-            <div className="home-section-head">
-              <h2>Tasks to be done</h2>
+              <span className="home-course-cta">
+                {videosCompleted === 0 ? "Start course" : coursePercent >= 100 ? "Review course" : "Continue learning"}
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
             </div>
-            <div className="home-tasks-card glass">
-              {!loaded ? (
-                <p className="admin-empty">Loading…</p>
-              ) : pendingTasks.length === 0 ? (
-                <p className="admin-empty">
-                  {allTasks.length === 0 ? "No tasks have been assigned yet." : "All caught up — nothing pending!"}
-                </p>
-              ) : (
-                <ul className="home-task-list">
-                  {pendingTasks.map((task) => {
-                    const info = LESSON_INFO.get(task.lessonKey);
-                    return (
-                      <li key={task.id}>
-                        <span className="home-task-name">{task.name}</span>
-                        {info && (
-                          <span className="home-task-context">
-                            {curriculumLevelLabels[info.level]} · {info.label}
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <Link href="/training" className="admin-link-btn">Go to Course Curriculum →</Link>
-            </div>
-          </section>
-        </div>
+          </Link>
+        </section>
       </div>
     </main>
   );
