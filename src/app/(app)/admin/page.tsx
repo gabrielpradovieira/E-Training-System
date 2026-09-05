@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   createManagedUser,
@@ -13,6 +13,7 @@ import {
 import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile } from "@/lib/types";
 import RoleGuard from "@/components/dashboard/RoleGuard";
+import RosterActionMenu from "@/components/dashboard/RosterActionMenu";
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code;
@@ -208,6 +209,25 @@ function EditTeacherPanel({
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="8" y1="12" x2="16" y2="12"></line>
+      <line x1="11" y1="18" x2="13" y2="18"></line>
+    </svg>
+  );
+}
+
 function AdminPageContent() {
   const [teachers, setTeachers] = useState<UserProfile[] | null>(null);
   const [editingUid, setEditingUid] = useState<string | null>(null);
@@ -216,6 +236,8 @@ function AdminPageContent() {
   const [bulkStatus, setBulkStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [deletingUid, setDeletingUid] = useState<string | null>(null);
+  const [schoolFilter, setSchoolFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   function reload() {
     fetchTeachers()
@@ -228,6 +250,26 @@ function AdminPageContent() {
   }, []);
 
   const editingTeacher = teachers?.find((t) => t.uid === editingUid) ?? null;
+
+  const schoolOptions = useMemo(() => {
+    const schools = new Set<string>();
+    (teachers ?? []).forEach((t) => {
+      if (t.school) schools.add(t.school);
+    });
+    return Array.from(schools).sort((a, b) => a.localeCompare(b));
+  }, [teachers]);
+
+  const visibleTeachers = useMemo(() => {
+    let list = teachers ?? [];
+    if (schoolFilter) list = list.filter((t) => t.school === schoolFilter);
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      list = list.filter(
+        (t) => t.displayName.toLowerCase().includes(query) || t.email.toLowerCase().includes(query),
+      );
+    }
+    return list;
+  }, [teachers, schoolFilter, searchQuery]);
 
   async function handleResetOne(teacher: UserProfile) {
     setResettingUid(teacher.uid);
@@ -339,7 +381,7 @@ function AdminPageContent() {
           <AddTeacherForm onCreated={reload} />
         </section>
 
-        <section className="profile-card glass">
+        <section className="profile-card glass roster-card">
           <div className="profile-card-head">
             <div>
               <h2>Teachers</h2>
@@ -355,6 +397,34 @@ function AdminPageContent() {
             </button>
           </div>
 
+          <div className="roster-toolbar">
+            <div className="roster-search">
+              <SearchIcon />
+              <input
+                type="search"
+                placeholder="Search by name or email…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search teachers"
+              />
+            </div>
+            {schoolOptions.length > 1 && (
+              <div className="roster-filter">
+                <FilterIcon />
+                <select
+                  value={schoolFilter}
+                  onChange={(e) => setSchoolFilter(e.target.value)}
+                  aria-label="Filter by school"
+                >
+                  <option value="">All schools</option>
+                  {schoolOptions.map((school) => (
+                    <option key={school} value={school}>{school}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           {bulkStatus && <div className={`admin-status ${bulkStatus.kind}`}>{bulkStatus.message}</div>}
 
           {editingTeacher && (
@@ -368,13 +438,15 @@ function AdminPageContent() {
             />
           )}
 
-          <div className="admin-table-wrap">
+          <div className="roster-table-wrap">
             {teachers === null ? (
               <p className="admin-empty">Loading…</p>
             ) : teachers.length === 0 ? (
               <p className="admin-empty">No teachers yet.</p>
+            ) : visibleTeachers.length === 0 ? (
+              <p className="admin-empty">No teachers match your search.</p>
             ) : (
-              <table className="admin-table">
+              <table className="roster-table">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -384,47 +456,38 @@ function AdminPageContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {teachers.map((teacher) => (
+                  {visibleTeachers.map((teacher) => (
                     <tr key={teacher.uid}>
-                      <td>{teacher.displayName}</td>
+                      <td className="roster-name-cell">{teacher.displayName}</td>
                       <td>{teacher.email}</td>
                       <td>{teacher.school ?? "—"}</td>
                       <td>
-                        <div className="admin-row-actions">
-                          <button
-                            type="button"
-                            className="admin-link-btn"
-                            onClick={() => setEditingUid(teacher.uid)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-link-btn"
-                            onClick={() => handleResetOne(teacher)}
-                            disabled={resettingUid === teacher.uid}
-                          >
-                            {resettingUid === teacher.uid ? "Resetting…" : "Reset password"}
-                          </button>
-                          {rowErrors[teacher.uid] && (
-                            <button
-                              type="button"
-                              className="admin-link-btn"
-                              onClick={() => handleSendResetEmail(teacher)}
-                              disabled={resettingUid === teacher.uid}
-                            >
-                              Send reset email
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="admin-link-btn admin-link-btn-danger"
-                            onClick={() => handleDelete(teacher)}
-                            disabled={deletingUid === teacher.uid}
-                          >
-                            {deletingUid === teacher.uid ? "Deleting…" : "Delete"}
-                          </button>
-                        </div>
+                        <RosterActionMenu
+                          label={`Actions for ${teacher.displayName}`}
+                          actions={[
+                            { label: "Edit", onClick: () => setEditingUid(teacher.uid) },
+                            {
+                              label: resettingUid === teacher.uid ? "Resetting…" : "Reset password",
+                              onClick: () => handleResetOne(teacher),
+                              disabled: resettingUid === teacher.uid,
+                            },
+                            ...(rowErrors[teacher.uid]
+                              ? [
+                                  {
+                                    label: "Send reset email",
+                                    onClick: () => handleSendResetEmail(teacher),
+                                    disabled: resettingUid === teacher.uid,
+                                  },
+                                ]
+                              : []),
+                            {
+                              label: deletingUid === teacher.uid ? "Deleting…" : "Delete",
+                              onClick: () => handleDelete(teacher),
+                              disabled: deletingUid === teacher.uid,
+                              danger: true,
+                            },
+                          ]}
+                        />
                         {rowErrors[teacher.uid] && (
                           <div className="admin-status error admin-row-error">{rowErrors[teacher.uid]}</div>
                         )}
