@@ -74,7 +74,7 @@ function ForgotPassword({ initialEmail }: { initialEmail: string }) {
 function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/training";
+  const nextPath = searchParams.get("next") || "/home";
   const notApproved = searchParams.get("error") === "not-approved";
   const { user, loading, signInEmail } = useAuth();
 

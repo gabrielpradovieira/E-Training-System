@@ -15,7 +15,7 @@ const TOTAL_LESSONS = countAllLessons();
 
 function currentSlug(pathname: string): string {
   const slug = pathname.split("/").filter(Boolean)[0];
-  return slug && pageMeta[slug] ? slug : "training";
+  return slug && pageMeta[slug] ? slug : "home";
 }
 
 function CompletionRing({ percent }: { percent: number }) {

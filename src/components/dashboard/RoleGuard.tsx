@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 
 /**
  * Gates a page to admins and/or teachers. Renders nothing (and redirects
- * to /training) for anyone else — mirrors AuthGuard's client-only pattern;
+ * to /home) for anyone else — mirrors AuthGuard's client-only pattern;
  * the real enforcement is in firestore.rules, this just avoids flashing
  * the page to someone who can't use it.
  */
@@ -23,7 +23,7 @@ export default function RoleGuard({
   const allowed = allow === "admin" ? isAdmin : isAdmin || isTeacher;
 
   useEffect(() => {
-    if (profile && !allowed) router.replace("/training");
+    if (profile && !allowed) router.replace("/home");
   }, [profile, allowed, router]);
 
   if (!profile || !allowed) {
