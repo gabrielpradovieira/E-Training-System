@@ -105,16 +105,28 @@ function AddStudentForm({ onCreated }: { onCreated: () => void }) {
 
 type CsvRowState = StudentCsvRow & { password: string; status: "pending" | "creating" | "done" | "error"; error?: string };
 
+function UploadCloudIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 18a4.5 4.5 0 0 1-.5-8.97A5.5 5.5 0 0 1 17.3 7.03 4 4 0 0 1 17 15" />
+      <path d="M12 12v7" />
+      <path d="m9 15 3-3 3 3" />
+    </svg>
+  );
+}
+
 function CsvUploadForm({ onCreated }: { onCreated: () => void }) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<CsvRowState[]>([]);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
     file.text().then((text) => {
       const { rows: parsedRows, errors } = parseStudentCsv(text);
       setParseErrors(errors);
@@ -158,15 +170,29 @@ function CsvUploadForm({ onCreated }: { onCreated: () => void }) {
   return (
     <div className="admin-form">
       <div className="csv-upload">
-        <div className="admin-row-actions">
-          <button type="button" className="admin-secondary-btn" onClick={downloadStudentCsvTemplate}>
-            Download CSV template
-          </button>
+        <div className="csv-upload-icon">
+          <UploadCloudIcon />
         </div>
-        <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} />
+        <p className="csv-upload-title">Upload a CSV file</p>
         <p className="csv-hint">
           Header row required with columns: <code>Full Name</code>, <code>Email</code>, <code>School</code>.
         </p>
+        <div className="csv-upload-actions">
+          <label className="csv-file-btn">
+            Choose file
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFile}
+              className="csv-file-input"
+            />
+          </label>
+          <button type="button" className="admin-secondary-btn" onClick={downloadStudentCsvTemplate}>
+            Download template
+          </button>
+        </div>
+        {fileName && <p className="csv-filename">Selected: {fileName}</p>}
       </div>
 
       {parseErrors.length > 0 && (
