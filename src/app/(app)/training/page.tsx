@@ -76,6 +76,22 @@ function CheckIcon() {
   );
 }
 
+function ChevronLeftIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
 function AddTaskModal({
   lessonLabel,
   busy,
@@ -452,6 +468,11 @@ export default function TrainingPage() {
               </div>
               <div className="video-info">
                 <div className="video-copy">
+                  {currentLessonKey && (
+                    <p className="video-module-tag">
+                      {curriculumLevelLabels[activeLevel]} · {String(GLOBAL_LESSON_NUMBERS.get(currentLessonKey) ?? 0).padStart(2, "0")}
+                    </p>
+                  )}
                   <h3 className="video-title">{videoTitle}</h3>
                 </div>
                 <div className="video-controls" aria-label="Lesson navigation">
@@ -462,6 +483,7 @@ export default function TrainingPage() {
                     aria-pressed={!!currentLessonKey && watched.has(currentLessonKey)}
                     onClick={() => currentLessonKey && toggleWatched(currentLessonKey)}
                   >
+                    <CheckIcon />
                     {currentLessonKey && watched.has(currentLessonKey) ? "Completed" : "Mark as completed"}
                   </button>
                   <button
@@ -470,6 +492,7 @@ export default function TrainingPage() {
                     disabled={currentIndex <= 0}
                     onClick={() => selectByOffset(-1)}
                   >
+                    <ChevronLeftIcon />
                     Previous
                   </button>
                   <button
@@ -479,6 +502,7 @@ export default function TrainingPage() {
                     onClick={() => selectByOffset(1)}
                   >
                     Next
+                    <ChevronRightIcon />
                   </button>
                 </div>
               </div>
