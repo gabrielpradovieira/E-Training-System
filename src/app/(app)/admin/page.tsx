@@ -6,6 +6,7 @@ import {
   createManagedUser,
   deleteTeacher,
   fetchTeachers,
+  grantAdmin,
   resetTeacherPassword,
   sendTeacherPasswordResetEmail,
   updateTeacher,
@@ -39,6 +40,7 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [school, setSchool] = useState("");
+  const [makeAdmin, setMakeAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
@@ -58,18 +60,26 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
         school: school.trim(),
         createdByUid: user.uid,
       });
+      if (makeAdmin) await grantAdmin(email, user.uid);
       onCreated();
-      const emailSent = await sendInviteEmail({ displayName, email, password, role: "teacher" });
+      const emailSent = await sendInviteEmail({
+        displayName,
+        email,
+        password,
+        role: makeAdmin ? "admin" : "teacher",
+      });
+      const adminNote = makeAdmin ? " They also have full admin access." : "";
       setStatus({
         kind: "success",
         message: emailSent
-          ? `Teacher account created for ${displayName}. An invite email with their login was sent to ${email}.`
-          : `Teacher account created for ${displayName}. Password: ${password} (couldn't send the invite email automatically — share this password with them directly).`,
+          ? `Teacher account created for ${displayName}. An invite email with their login was sent to ${email}.${adminNote}`
+          : `Teacher account created for ${displayName}. Password: ${password} (couldn't send the invite email automatically — share this password with them directly).${adminNote}`,
       });
       setFirstName("");
       setLastName("");
       setEmail("");
       setSchool("");
+      setMakeAdmin(false);
     } catch (err) {
       setStatus({ kind: "error", message: friendlyError(err) });
     } finally {
@@ -123,6 +133,16 @@ function AddTeacherForm({ onCreated }: { onCreated: () => void }) {
           />
         </div>
       </div>
+      <label className="admin-checkbox-field">
+        <input
+          type="checkbox"
+          checked={makeAdmin}
+          onChange={(e) => setMakeAdmin(e.target.checked)}
+        />
+        <span>
+          Make admin <span className="admin-field-hint">(full access to every admin function, not just teacher tools)</span>
+        </span>
+      </label>
       <p className="csv-hint">
         Password is generated automatically: Firstname.Lastname — the teacher will be required to change it the
         first time they sign in.

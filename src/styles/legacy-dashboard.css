@@ -5301,6 +5301,24 @@
       letter-spacing: normal;
     }
 
+    .admin-checkbox-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .admin-checkbox-field input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
     .password-reveal {
       display: inline-flex;
       align-items: center;

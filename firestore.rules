@@ -4,9 +4,13 @@ rules_version = '2';
 // E-Training System — Firestore security rules (client-only model)
 //
 // Security model:
-//  - Admin is the single ADMIN_EMAIL below. Set it to your admin's email.
-//    (There is no server/Admin SDK in this model, so the admin email is
-//    enforced here in the rules — this file IS the source of truth for it.)
+//  - The primary admin is the single ADMIN_EMAIL below. Set it to your
+//    admin's email. (There is no server/Admin SDK in this model, so the
+//    admin email is enforced here in the rules — this file IS the source
+//    of truth for it.) The primary admin can also grant admin access to
+//    other accounts (e.g. a teacher) — that grant lives as a doc in the
+//    admins/ collection, keyed by the account's email, and is checked
+//    alongside the ADMIN_EMAIL match everywhere isAdmin() is used.
 //  - Three roles: admin, teacher, student.
 //    - Admin can read/write anything.
 //    - Teacher can create student accounts (role must be 'student', and
@@ -41,8 +45,12 @@ service cloud.firestore {
       return "oartevista@gmail.com";
     }
 
+    // True for the primary ADMIN_EMAIL, or for any account granted admin
+    // access via a doc in admins/{email} (see grantAdmin() in the app).
     function isAdmin() {
-      return isSignedIn() && userEmail() == adminEmail();
+      return isSignedIn()
+        && (userEmail() == adminEmail()
+            || exists(/databases/$(database)/documents/admins/$(userEmail())));
     }
 
     function ownProfile() {
@@ -124,6 +132,12 @@ service cloud.firestore {
 
     // Admin-managed email allowlist.
     match /allowlist/{emailId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Accounts granted admin access (beyond the primary ADMIN_EMAIL),
+    // keyed by email. Only an existing admin can grant/revoke this.
+    match /admins/{emailId} {
       allow read, write: if isAdmin();
     }
 

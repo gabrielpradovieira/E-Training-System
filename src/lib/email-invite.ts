@@ -24,7 +24,7 @@ export async function sendInviteEmail(params: {
   displayName: string;
   email: string;
   password: string;
-  role: "teacher" | "student";
+  role: "admin" | "teacher" | "student";
 }): Promise<boolean> {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) return false;
   try {
@@ -34,7 +34,7 @@ export async function sendInviteEmail(params: {
       {
         to_name: params.displayName,
         to_email: params.email,
-        role: params.role === "teacher" ? "Teacher" : "Student",
+        role: params.role === "admin" ? "Admin" : params.role === "teacher" ? "Teacher" : "Student",
         login_email: params.email,
         login_password: params.password,
         login_url: `${window.location.origin}/login`,

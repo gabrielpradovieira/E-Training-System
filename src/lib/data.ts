@@ -15,7 +15,7 @@ import {
 import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
 import { getSecondaryAuth } from "@/lib/firebase/secondary";
-import { normalizeEmail } from "@/lib/email";
+import { emailDocId, normalizeEmail } from "@/lib/email";
 import { generateTeacherPassword } from "@/lib/generated-password";
 import type { UserProfile, UserRole } from "@/lib/types";
 
@@ -125,6 +125,27 @@ export async function createManagedUser(params: {
     // success or failure, so it never lingers as a stray signed-in state.
     await fbSignOut(secondaryAuth).catch(() => {});
   }
+}
+
+/**
+ * Grants an account (typically a teacher) full admin access, by writing a
+ * doc keyed by their email to the admins/ collection — checked by
+ * isAdmin() in firestore.rules alongside the primary ADMIN_EMAIL. Their
+ * profile's role is left as-is (e.g. still "teacher"), so they keep
+ * showing up in Manage Teachers, but every admin-only page/action now
+ * opens up for them too. Admin only, per the security rules.
+ */
+export async function grantAdmin(email: string, grantedByUid: string): Promise<void> {
+  await setDoc(doc(db, "admins", emailDocId(email)), {
+    email: normalizeEmail(email),
+    grantedAt: Date.now(),
+    grantedBy: grantedByUid,
+  });
+}
+
+/** Revokes a previously granted admin access. Admin only, per the security rules. */
+export async function revokeAdmin(email: string): Promise<void> {
+  await deleteDoc(doc(db, "admins", emailDocId(email)));
 }
 
 /**
